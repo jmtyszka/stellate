@@ -42,7 +42,8 @@ __version__ = '0.1.0'
 import os
 import sys
 import argparse
-from skimage import io
+import skimage as ski
+from scipy.misc import imresize
 
 
 def main():
@@ -84,46 +85,73 @@ def main():
     # Load all RAW images from input directory
     stack_rgb = load_png_stack(raw_dir)
 
-    # Correct for inter-frame motion
-    stack_rgb_moco = register_stack(stack_rgb)
+    # Calculate luminance
+    stack_lum = luminance(stack_rgb)
 
-    # Blind deconvolution
-    # stack_decon = blind_deconvolve(stack_rgb_moco)
+    # Motion correct frames
+    stack_rgb_moco = moco(stack_lum, stack_rgb)
 
-    # Save stack
+    # Save corrected stack
     save_stack(stack_rgb_moco, out_dir)
 
     # Clean exit
     sys.exit(0)
 
 
-def register_stack(stack_rgb):
+def moco(stack_lum, stack_rgb):
 
+    import skimage.transform as tf
     from skimage.feature import register_translation
-    from skimage.transform import SimilarityTransform, warp
-    from skimage.color import rgb2gray
 
-    ref_gray = rgb2gray(stack_rgb[0])
+    # Image dimensions
+    ny, nx = stack_lum[0].shape
+    print('  Frame size (rows x cols) : %d x %d' % (ny, nx))
 
+    # Moco estimation target image width
+    nx_dwn = 256
+    sf = nx_dwn / float(nx)
+
+    # Prep registration reference image
+    ref_dwn = imresize(stack_lum[0], sf, interp='lanczos')
+
+    # Init motion corrected stack
     stack_rgb_moco = list()
 
-    for img_rgb in stack_rgb:
+    print('  Starting displacement estimation')
 
-        img_gray = rgb2gray(img_rgb)
+    for tc, img in enumerate(stack_lum):
 
-        # 2D register
-        shifts, error, phasediff = register_translation(img_gray, ref_gray)
+        # Downsample
+        print('  - downsampling (x %0.3f)' % sf)
+        s_dwn = imresize(img, sf, interp='lanczos')
 
-        # Construct transform object
-        tx = SimilarityTransform(translation=shifts)
+        # Run Fourier cross correlation
+        print('  - estimating displacement')
+        disp, err, pd = register_translation(s_dwn, ref_dwn)
 
-        # Apply translation
-        img_rgb_tx = warp(img_rgb, tx)
+        # Rescale displacements to full resolution
+        dy, dx = disp/sf
+        print('  - estimated displacement (dx, dy) : (%0.1f, %0.1f)' % (dx, dy))
+
+        # Apply motion correction to full resolution RGB image
+        print('  - correcting image')
+        moco = tf.EuclideanTransform(translation=[dx, dy])
+        rgb_moco = tf.warp(stack_rgb[tc], moco)
 
         # Add to transformed image list
-        stack_rgb_moco.append(img_rgb_tx)
+        stack_rgb_moco.append(rgb_moco)
 
     return stack_rgb_moco
+
+
+def luminance(stack_rgb):
+
+    stack_gray = list()
+
+    for rgb in stack_rgb:
+        stack_gray.append(ski.color.rgb2gray(rgb))
+
+    return stack_gray
 
 
 def blind_deconvolve(stack_rgb):
@@ -144,35 +172,40 @@ def load_png_stack(png_dir):
     :return:
     """
 
+    from skimage.io import imread
+
     # Init empty list for image stack_rgb
     stack_rgb = list()
+
+    print('  Loading images from %s' % png_dir)
 
     for fname in os.listdir(png_dir):
 
         try:
-            img = io.imread(fname)
+            img = imread(fname)
         except:
             img = []
             pass
 
         if len(img) > 0:
-            print('Loaded %s' % fname)
+            print('  Loaded %s' % fname)
+            img = imresize(img, 0.5)
             stack_rgb.append(img)
 
     if len(stack_rgb) < 1:
-        print('No images were loaded')
+        print('* No images were loaded')
 
     return stack_rgb
 
 
 def save_stack(stack_rgb, out_dir):
 
-    from skimage.io import imshow, imsave
-
     for ic, img in enumerate(stack_rgb):
 
         fname = os.path.join(out_dir, 'img_%03d.png' % ic)
-        imsave(fname, img)
+
+        print('  Saving image to %s' % fname)
+        ski.io.imsave(fname, img)
 
     return
 
