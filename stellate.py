@@ -30,63 +30,75 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QAction, QTabWidget, QVBoxLayout
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot
+from PyQt5 import uic
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
+
+from astropy.io import fits
+import numpy as np
+from skimage import img_as_ubyte
 
 
-class App(QMainWindow):
+class StellateApp(QMainWindow):
 
     def __init__(self):
-        super().__init__()
-        self.title = 'PyQt5 tabs - pythonspot.com'
-        self.left = 0
-        self.top = 0
-        self.width = 300
-        self.height = 200
-        self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
 
-        #self.table_widget = MyTableWidget(self)
-        #self.setCentralWidget(self.table_widget)
+        QMainWindow.__init__(self)
 
-        self.show()
+        self.ui = uic.loadUi(('stellate.ui'), self)
+
+        # Connect actions to handlers
+        self.actionOpen_FITS.triggered.connect(self.chooseFITS)
+
+        self.ui.show()
 
 
-class MyTableWidget(QWidget):
+    def chooseFITS(self):
 
-    def __init__(self, parent):
-        super(QWidget, self).__init__(parent)
-        self.layout = QVBoxLayout(self)
+        options = QFileDialog.Options()
+        # options |= QFileDialog.DontUseNativeDialog
 
-        # Initialize tab screen
-        self.tabs = QTabWidget()
-        self.tab1 = QWidget()
-        self.tab2 = QWidget()
-        self.tabs.resize(300, 200)
+        # Open a file chooser dialog
+        fileName, _ = QFileDialog.getOpenFileName(self,
+            "QFileDialog.getOpenFileName()",
+            "",
+            "All Files (*);;FITS images (*.fit)",
+            options=options)
 
-        # Add tabs
-        self.tabs.addTab(self.tab1, "Tab 1")
-        self.tabs.addTab(self.tab2, "Tab 2")
+        if fileName:
+            self.loadFITS(fileName)
 
-        # Create first tab
-        self.tab1.layout = QVBoxLayout(self)
-        self.pushButton1 = QPushButton("PyQt5 button")
-        self.tab1.layout.addWidget(self.pushButton1)
-        self.tab1.setLayout(self.tab1.layout)
+    def loadFITS(self, fileName):
 
-        # Add tabs to widget
-        self.layout.addWidget(self.tabs)
-        self.setLayout(self.layout)
+        with fits.open(fileName) as hdu_list:
 
-    @pyqtSlot()
-    def on_click(self):
-        print("Click\n")
-        for currentQTableWidgetItem in self.tableWidget.selectedItems():
-            print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
+            # Load image data from FITS
+            img16 = hdu_list[0].data
+
+        # Robust scaling to 95 percentile
+        p95 = np.percentile(img16, 95.0)
+        imin, imax = 0, p95
+        img16[img16 > p95] = p95
+
+        # Display image in Viewer tab
+        img8 = np.uint8((img16 - imin) / float(imax) * 255.0)
+
+        # Create
+
+        qimage = QImage(img8, img8.shape[1], img8.shape[0], QImage.Format_Grayscale8)
+        pixmap = QPixmap(qimage)
+        pixmap = pixmap.scaled(1280, 720, Qt.KeepAspectRatio)
+        self.imgViewer.setPixmap(pixmap)
 
 
-if __name__ == '__main__':
+# Main entry point
+if __name__ == "__main__":
+
     app = QApplication(sys.argv)
-    ex = App()
+
+    window = StellateApp()
+    window.show()
+
     sys.exit(app.exec_())
+

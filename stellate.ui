@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1800</width>
-    <height>1200</height>
+    <width>1600</width>
+    <height>849</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,44 +17,56 @@
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
-      <x>-2</x>
-      <y>-1</y>
-      <width>1801</width>
-      <height>1121</height>
+      <x>0</x>
+      <y>0</y>
+      <width>1600</width>
+      <height>900</height>
      </rect>
     </property>
     <property name="currentIndex">
      <number>0</number>
     </property>
-    <widget class="QWidget" name="tab">
+    <widget class="QWidget" name="tabViewer">
      <attribute name="title">
       <string>Viewer</string>
      </attribute>
-     <widget class="QOpenGLWidget" name="openGLWidget">
-      <property name="geometry">
-       <rect>
-        <x>40</x>
-        <y>30</y>
-        <width>1321</width>
-        <height>1021</height>
-       </rect>
-      </property>
-     </widget>
      <widget class="QPushButton" name="pushButton">
       <property name="geometry">
        <rect>
-        <x>1400</x>
-        <y>30</y>
-        <width>331</width>
+        <x>1360</x>
+        <y>10</y>
+        <width>221</width>
         <height>61</height>
        </rect>
       </property>
       <property name="text">
-       <string>Load FITS Image ...</string>
+       <string>Auto Stretch</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <property name="default">
+       <bool>false</bool>
+      </property>
+      <property name="flat">
+       <bool>false</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="imgViewer">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>20</y>
+        <width>1280</width>
+        <height>720</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab_2">
+    <widget class="QWidget" name="tabStacker">
      <attribute name="title">
       <string>Stacker</string>
      </attribute>
@@ -66,16 +78,67 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1800</width>
-     <height>38</height>
+     <width>1600</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="defaultUp">
     <bool>false</bool>
    </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionOpen_FITS"/>
+    <addaction name="actionSave_FITS"/>
+    <addaction name="separator"/>
+    <addaction name="actionClose"/>
+   </widget>
+   <addaction name="menuFile"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionSave_FITS">
+   <property name="text">
+    <string>Save FITS ...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionOpen_FITS">
+   <property name="text">
+    <string>Open FITS ...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionClose">
+   <property name="text">
+    <string>Close</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>actionClose</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>799</x>
+     <y>424</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
