@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple FITS astronomy stacker
+Simple FITS astronomy viewer/processor
 
 AUTHOR
 ----
@@ -31,7 +31,6 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QGraphicsScene
 
@@ -39,6 +38,7 @@ import numpy as np
 from astropy.io import fits
 
 from stellate_ui import Ui_MainWindow
+
 
 class StellateMainWindow(QMainWindow):
     """
@@ -59,10 +59,10 @@ class StellateMainWindow(QMainWindow):
         self.scene = QGraphicsScene()
         self.ui.imgViewer.setScene(self.scene)
 
-        # Connect actions to handlers
-        self.ui.actionOpen_FITS.triggered.connect(self.choose_fits)
+        # Add viewer mouse callbacks
 
-        # Viewer zoom
+        # Menu callbacks
+        self.ui.actionOpen_FITS.triggered.connect(self.choose_fits)
 
     def choose_fits(self):
         """
