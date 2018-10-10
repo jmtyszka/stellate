@@ -30,31 +30,45 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import sys
-from PyQt5 import uic
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QGraphicsScene
 
-from astropy.io import fits
 import numpy as np
-from skimage import img_as_ubyte
+from astropy.io import fits
 
+from stellate_ui import Ui_MainWindow
 
-class StellateApp(QMainWindow):
+class StellateMainWindow(QMainWindow):
+    """
+    Single inheritance class for Stellate UI
+    See http://pyqt.sourceforge.net/Docs/PyQt5/designer.html
+    """
 
     def __init__(self):
 
-        QMainWindow.__init__(self)
+        # Init the base class
+        super().__init__()
 
-        self.ui = uic.loadUi(('stellate.ui'), self)
+        # Set up the Qt Designer-generated UI
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+
+        # Create a scene for the viewer
+        self.scene = QGraphicsScene()
+        self.ui.imgViewer.setScene(self.scene)
 
         # Connect actions to handlers
-        self.actionOpen_FITS.triggered.connect(self.chooseFITS)
+        self.ui.actionOpen_FITS.triggered.connect(self.choose_fits)
 
-        self.ui.show()
+        # Viewer zoom
 
-
-    def chooseFITS(self):
+    def choose_fits(self):
+        """
+        Let use choose a FITS file to load
+        :return:
+        """
 
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
@@ -67,29 +81,47 @@ class StellateApp(QMainWindow):
             options=options)
 
         if fileName:
-            self.loadFITS(fileName)
+            self.load_fits(fileName)
 
-    def loadFITS(self, fileName):
+    def load_fits(self, fileName):
+        """
+        Load the FITS file selected by the user
+        :param fileName:
+        :return:
+        """
 
-        with fits.open(fileName) as hdu_list:
+        with fits.open(fileName) as self.hdu_list:
 
             # Load image data from FITS
-            img16 = hdu_list[0].data
+            self.img16 = self.hdu_list[0].data
 
         # Robust scaling to 95 percentile
-        p95 = np.percentile(img16, 95.0)
+        p95 = np.percentile(self.img16, 100.0)
         imin, imax = 0, p95
-        img16[img16 > p95] = p95
+        self.img16[self.img16 > p95] = p95
 
-        # Display image in Viewer tab
-        img8 = np.uint8((img16 - imin) / float(imax) * 255.0)
+        # Scale the image from uint16 to uint8 for display
+        self.img8 = np.uint8((self.img16 - imin) / float(imax) * 255.0)
 
-        # Create
+        # Convert the uchar grayscale image to a pixmap
+        w, h = self.img8.shape[1], self.img8.shape[0]
+        qimage = QImage(self.img8, w, h, QImage.Format_Grayscale8)
+        qpixmap = QPixmap(qimage)
 
-        qimage = QImage(img8, img8.shape[1], img8.shape[0], QImage.Format_Grayscale8)
-        pixmap = QPixmap(qimage)
-        pixmap = pixmap.scaled(1280, 720, Qt.KeepAspectRatio)
-        self.imgViewer.setPixmap(pixmap)
+        # Add the pixmap to the graphics scene
+        try:
+            self.scene.addPixmap(qpixmap)
+        except Exception as err:
+            print(str(err))
+
+    def zoom_image(self):
+
+        pass
+
+    def pan_image(self):
+
+        pass
+
 
 
 # Main entry point
@@ -97,7 +129,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    window = StellateApp()
+    window = StellateMainWindow()
     window.show()
 
     sys.exit(app.exec_())
