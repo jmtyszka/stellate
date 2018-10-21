@@ -30,17 +30,14 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import sys
-
-from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QGraphicsScene
-
 import numpy as np
+from PyQt5 import QtWidgets
 from astropy.io import fits
-
 from stellate_ui import Ui_MainWindow
+from starfinder import starfinder
 
 
-class StellateMainWindow(QMainWindow):
+class StellateMainWindow(QtWidgets.QMainWindow):
     """
     Single inheritance class for Stellate UI
     See http://pyqt.sourceforge.net/Docs/PyQt5/designer.html
@@ -54,27 +51,26 @@ class StellateMainWindow(QMainWindow):
         # Set up the Qt Designer-generated UI
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-
-        # Create a scene for the viewer
-        self.scene = QGraphicsScene()
-        self.ui.imgViewer.setScene(self.scene)
-
-        # Add viewer mouse callbacks
+        self.img16 = np.array([])
 
         # Menu callbacks
         self.ui.actionOpen_FITS.triggered.connect(self.choose_fits)
 
+        # Button callbacks
+        self.ui.actionAutoStretch.triggered.connect(self.autostretch)
+        self.ui.actionFindStars.triggered.connect(self.findstars)
+
     def choose_fits(self):
         """
-        Let use choose a FITS file to load
+        Open file chooser to select FITS file(s)
+
         :return:
         """
 
-        options = QFileDialog.Options()
-        # options |= QFileDialog.DontUseNativeDialog
+        options = QtWidgets.QFileDialog.Options()
 
         # Open a file chooser dialog
-        fileName, _ = QFileDialog.getOpenFileName(self,
+        fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self,
             "QFileDialog.getOpenFileName()",
             "",
             "All Files (*);;FITS images (*.fit)",
@@ -84,50 +80,27 @@ class StellateMainWindow(QMainWindow):
             self.load_fits(fileName)
 
     def load_fits(self, fileName):
-        """
-        Load the FITS file selected by the user
-        :param fileName:
-        :return:
-        """
 
-        with fits.open(fileName) as self.hdu_list:
+        # Load FITS image from file
+        with fits.open(fileName) as hdu_list:
+            self.img16 = hdu_list[0].data
 
-            # Load image data from FITS
-            self.img16 = self.hdu_list[0].data
+        # Pass uint16 image to the viewer
+        self.ui.viewer.setImage(self.img16)
 
-        # Robust scaling to 95 percentile
-        p95 = np.percentile(self.img16, 100.0)
-        imin, imax = 0, p95
-        self.img16[self.img16 > p95] = p95
+    def autostretch(self):
+        # Pass Auto Stretch button status to viewer and repaint
+        self.ui.viewer.autostretch(self.ui.autoStretchButton.isChecked())
 
-        # Scale the image from uint16 to uint8 for display
-        self.img8 = np.uint8((self.img16 - imin) / float(imax) * 255.0)
-
-        # Convert the uchar grayscale image to a pixmap
-        w, h = self.img8.shape[1], self.img8.shape[0]
-        qimage = QImage(self.img8, w, h, QImage.Format_Grayscale8)
-        qpixmap = QPixmap(qimage)
-
-        # Add the pixmap to the graphics scene
-        try:
-            self.scene.addPixmap(qpixmap)
-        except Exception as err:
-            print(str(err))
-
-    def zoom_image(self):
-
-        pass
-
-    def pan_image(self):
-
-        pass
-
-
+    def findstars(self):
+        # Trigger a star search in the current image
+        if self.img16.size > 0:
+            starfinder(self.img16)
 
 # Main entry point
 if __name__ == "__main__":
 
-    app = QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
 
     window = StellateMainWindow()
     window.show()
