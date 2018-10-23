@@ -35,7 +35,7 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 from skimage.exposure import rescale_intensity
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtGui import QPixmap, QImage, QBrush, QColor
+from PyQt5.QtGui import QPixmap, QImage, QPen, QBrush, QColor
 
 
 class imgViewer(QtWidgets.QGraphicsView):
@@ -56,7 +56,11 @@ class imgViewer(QtWidgets.QGraphicsView):
         self._autostretch = False
         self._scene = QtWidgets.QGraphicsScene(self)
         self._image = QtWidgets.QGraphicsPixmapItem()
+        self._stars = QtWidgets.QGraphicsItemGroup()
+
+        # Populate scene with placeholder items
         self._scene.addItem(self._image)
+        self._scene.addItem(self._stars)
 
         # Add scene behind viewer
         self.setScene(self._scene)
@@ -96,6 +100,8 @@ class imgViewer(QtWidgets.QGraphicsView):
 
     def setImage(self, img16=None):
 
+        # Add non-empty image to scene
+
         self._zoom = 0
 
         if img16.any():
@@ -116,6 +122,8 @@ class imgViewer(QtWidgets.QGraphicsView):
 
     def exposeImage(self):
 
+        # Reveal image scene within viewer
+
         if self.hasImage():
 
             if self._autostretch:
@@ -132,6 +140,11 @@ class imgViewer(QtWidgets.QGraphicsView):
 
             # Finally place pixmap in scene
             self._image.setPixmap(pixmap)
+
+            # Add green circle to scene
+            starPen = QPen(QColor("#00FF00"))
+            starBrush = QBrush(QColor("#00FF00"))
+            self._scene.addEllipse(100, 100, 80, 40, starPen)
 
 
     def wheelEvent(self, event):
@@ -162,13 +175,13 @@ class imgViewer(QtWidgets.QGraphicsView):
                 self.fitInView()  # Clamp zoom at full window
 
     def mousePressEvent(self, event):
-
+        # Intercept mouse click even if over image
         if self._image.isUnderMouse():
-
             self.imageClicked.emit(QtCore.QPoint(event.pos()))
-
+        # Pass mouse click event
         super(imgViewer, self).mousePressEvent(event)
 
     def autostretch(self, status):
+        # Set autostretch status of viewer
         self._autostretch = status
         self.exposeImage()
