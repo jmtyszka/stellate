@@ -181,10 +181,12 @@ class imgViewer(QtWidgets.QGraphicsView):
     def mousePressEvent(self, event):
 
         if self._image.isUnderMouse():
-
             self.imageClicked.emit(QtCore.QPoint(event.pos()))
 
         super(imgViewer, self).mousePressEvent(event)
+
+    def keyPressEvent(self, event):
+            event.ignore()
 
     def autostretch(self, status):
         self._autostretch = status

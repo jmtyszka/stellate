@@ -31,7 +31,7 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
 import numpy as np
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 from astropy.io import fits
 from stellate_ui import Ui_MainWindow
 from starfinder import starfinder
@@ -51,7 +51,11 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Set up the Qt Designer-generated UI
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.img16 = np.array([])
+
+        # Init image storage
+        self.num_imgs = 0
+        self.img_idx = 0
+        self.img16_stack = []
 
         # Menu callbacks
         self.ui.actionOpen_FITS.triggered.connect(self.choose_fits)
@@ -67,26 +71,44 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         :return:
         """
 
+        # Setup file dialog options
         options = QtWidgets.QFileDialog.Options()
 
-        # Open a file chooser dialog
-        fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self,
-            "QFileDialog.getOpenFileName()",
-            "",
-            "All Files (*);;FITS images (*.fit)",
+        # Open a multifile chooser dialog
+        fnames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,
+            directory="",
+            filter="FITS images (*.fit)",
             options=options)
 
-        if fileName:
-            self.load_fits(fileName)
+        if fnames:
+            self.load_fits(fnames)
 
-    def load_fits(self, fileName):
+    def load_fits(self, fnames):
+        # Load one or more FITS images into working memory
 
-        # Load FITS image from file
-        with fits.open(fileName) as hdu_list:
-            self.img16 = hdu_list[0].data
+        print('Attempting to load %d FITS images' % len(fnames))
 
-        # Pass uint16 image to the viewer
-        self.ui.viewer.setImage(self.img16)
+        # Init image stack
+        img_stack = []
+
+        # Load image stack
+        for fname in fnames:
+
+            print('  Loading %s' % fname)
+
+            try:
+                with fits.open(fname) as hdu_list:
+                    img_stack.append(hdu_list[0].data)
+            except:
+                print('* Problem loading %s - skipping' % fname)
+
+        # Save the image stack in the app
+        self.img16_stack = img_stack
+
+        # Pass first image in FITS stack to the viewer
+        self.img_idx = 0
+        self.num_imgs = len(img_stack)
+        self.ui.viewer.setImage(self.img16_stack[self.img_idx])
 
     def autostretch(self):
         # Pass Auto Stretch button status to viewer and repaint
@@ -94,9 +116,33 @@ class StellateMainWindow(QtWidgets.QMainWindow):
 
     def findstars(self):
         # Trigger a star search in the current image
-        if self.img16.size > 0:
-            self.stars = starfinder(self.img16)
+        if self.num_imgs > 0:
+            self.stars = starfinder(self.img16_stack[self.img_idx])
             self.ui.viewer.showstars(self.stars)
+
+    def keyPressEvent(self, event):
+        """
+        Handle main window key presses
+
+        :param event:
+        :return:
+        """
+
+        key = event.key()
+
+        if self.num_imgs > 0:
+
+            ni, ii = self.num_imgs, self.img_idx
+
+            if key == QtCore.Qt.Key_Up:
+                self.img_idx = np.mod(ii + 1, ni)
+            elif key == QtCore.Qt.Key_Down:
+                self.img_idx = np.mod(ii + ni - 1, ni)
+            else:
+                pass
+
+            # Update displayed image in viewer
+            self.ui.viewer.setImage(self.img16_stack[self.img_idx])
 
 
 # Main entry point
