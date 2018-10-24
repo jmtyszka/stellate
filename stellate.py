@@ -108,7 +108,7 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Pass first image in FITS stack to the viewer
         self.img_idx = 0
         self.num_imgs = len(img_stack)
-        self.ui.viewer.setImage(self.img16_stack[self.img_idx])
+        self.ui.viewer.setImage(self.img16_stack[self.img_idx], reset=True)
 
     def autostretch(self):
         # Pass Auto Stretch button status to viewer and repaint

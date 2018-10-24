@@ -77,6 +77,7 @@ def starfinder(img16):
     star_area = []
     star_ecc = []
     star_int = []
+
     for r in rprops:
         star_area.append(r.area)
         star_ecc.append(r.eccentricity)

@@ -55,14 +55,19 @@ class imgViewer(QtWidgets.QGraphicsView):
         self._zoom = 0
         self._empty = True
         self._autostretch = False
+
+        # Scene components
         self._scene = QtWidgets.QGraphicsScene(self)
         self._image = QtWidgets.QGraphicsPixmapItem()
         self._mask = QtWidgets.QGraphicsPixmapItem()
-        self._overlay = QtWidgets.QGraphicsPixmapItem()
+        self._staroverlay = QtWidgets.QGraphicsItemGroup()
+        self._annotations = QtWidgets.QGraphicsItemGroup()
 
         # Add items to scene
         self._scene.addItem(self._image)
         self._scene.addItem(self._mask)
+        self._scene.addItem(self._staroverlay)
+        self._scene.addItem(self._annotations)
 
         # Add scene behind viewer
         self.setScene(self._scene)
@@ -100,9 +105,7 @@ class imgViewer(QtWidgets.QGraphicsView):
 
             self._zoom = 0
 
-    def setImage(self, img16=None):
-
-        self._zoom = 0
+    def setImage(self, img16=None, reset=False):
 
         if img16.any():
 
@@ -118,7 +121,8 @@ class imgViewer(QtWidgets.QGraphicsView):
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
             self._image.setPixmap(QPixmap())
 
-        self.fitInView()
+        if reset:
+            self.fitInView()
 
     def exposeImage(self):
 
@@ -149,7 +153,10 @@ class imgViewer(QtWidgets.QGraphicsView):
 
             pen = QPen(QColor('#00FF00'), 1)
 
-            self._scene.addRect(x, y, w, h, pen)
+            star_rect = QtWidgets.QGraphicsRectItem(x, y, w, h)
+            star_rect.setPen(pen)
+
+            self._staroverlay.addToGroup(star_rect)
 
     def wheelEvent(self, event):
         """
