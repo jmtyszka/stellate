@@ -95,7 +95,9 @@ class StellateMainWindow(QtWidgets.QMainWindow):
     def findstars(self):
         # Trigger a star search in the current image
         if self.img16.size > 0:
-            starfinder(self.img16)
+            self.stars = starfinder(self.img16)
+            self.ui.viewer.showstars(self.stars)
+
 
 # Main entry point
 if __name__ == "__main__":

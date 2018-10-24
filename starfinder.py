@@ -33,21 +33,77 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 ORB feature detection and binary descriptor test
 """
 
-from skimage import transform as tf
-from skimage.feature import match_descriptors, ORB, plot_matches
-from skimage.color import rgb2gray
-from skimage.io import imread
-from scipy.misc import imresize
+import numpy as np
+from skimage.morphology import remove_small_objects
+from skimage.restoration import estimate_sigma
+from skimage.measure import label, regionprops
 
 
 def starfinder(img16):
+    """
+    Find likely stars in AP image
 
-    if img16.size > 0:
+    :param img16: numpy array int16, original AP image
+    :return:
+    """
 
-        print('Hello from starfinder!')
+    stars = []
 
-    else:
-
+    if img16.size == 0:
         print('* Empty image passed to starfinder - returning')
+        return stars
+
+    # Estimate noise sd
+    sd_n = estimate_sigma(img16, multichannel=False)
+    th = 10.0 * sd_n
+    print('  Noise sd : %0.3f' % sd_n)
+    print('  Thresholding at %0.3f' % th)
+
+    # Create superthreshold mask
+    mask = img16 > th
+
+    # Remove objects < 9 pixels in size
+    print('  Removing small objects')
+    mask_clean = remove_small_objects(mask, min_size=9)
+
+    # Label connected regions
+    print('  Labeling connected regions')
+    label_image = label(mask_clean)
+
+    # Note future proofing use of row-col coords
+    rprops = regionprops(label_image, img16, coordinates='rc')
+
+    # Extract region areas and eccentricities
+    star_area = []
+    star_ecc = []
+    star_int = []
+    for r in rprops:
+        star_area.append(r.area)
+        star_ecc.append(r.eccentricity)
+        star_int.append(r.mean_intensity)
+
+    star_area = np.array(star_area)
+    star_ecc = np.array(star_ecc)
+    star_int = np.array(star_int)
+
+    int_th = np.percentile(star_int, 50.0)
+    area_th = np.percentile(star_area, 95.0)
+    ecc_th = np.percentile(star_ecc, 50.0)
+
+    print('  Intensity threshold : %0.1f' % int_th)
+    print('  Area threshold : %0.1f pixels' % area_th)
+    print('  Eccentricity threshold : %0.1f' % ecc_th)
+
+    # Compile list of good star candidates
+    stars = []
+    for r in rprops:
+        if r.mean_intensity > int_th:
+            stars.append(r)
+
+    print('  Found %d potential stars' % len(rprops))
+    print('  Identified %d good star candidates' % (len(stars)))
+
+    return stars
+
 
 
