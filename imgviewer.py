@@ -144,6 +144,12 @@ class imgViewer(QtWidgets.QGraphicsView):
             self._image.setPixmap(img_pixmap)
 
     def showstars(self, stars):
+        """
+        Fill star overlay group item with green star bboxes
+
+        :param stars: regionprop object (scikit-image.measure)
+        :return:
+        """
 
         for s in stars:
 
@@ -151,11 +157,12 @@ class imgViewer(QtWidgets.QGraphicsView):
             x, y = bb[1], bb[0]
             w, h = bb[3]-bb[1], bb[2]-bb[0]
 
-            pen = QPen(QColor('#00FF00'), 1)
-
+            # Green bbox, width 1
             star_rect = QtWidgets.QGraphicsRectItem(x, y, w, h)
+            pen = QPen(QColor('#00FF00'), 1)
             star_rect.setPen(pen)
 
+            # Add bbox to star overlay group
             self._staroverlay.addToGroup(star_rect)
 
     def wheelEvent(self, event):

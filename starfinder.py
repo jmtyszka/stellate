@@ -56,8 +56,6 @@ def starfinder(img16):
     # Estimate noise sd
     sd_n = estimate_sigma(img16, multichannel=False)
     th = 10.0 * sd_n
-    print('  Noise sd : %0.3f' % sd_n)
-    print('  Thresholding at %0.3f' % th)
 
     # Create superthreshold mask
     mask = img16 > th
@@ -101,10 +99,50 @@ def starfinder(img16):
         if r.mean_intensity > int_th:
             stars.append(r)
 
-    print('  Found %d potential stars' % len(rprops))
-    print('  Identified %d good star candidates' % (len(stars)))
+    # Print summary
+    print('')
+    print('Starfinder Results')
+    print('  Noise sd        : %0.3f' % sd_n)
+    print('  Threshold       : %0.3f' % th)
+    print('  Potential stars : %d' % len(rprops))
+    print('  Good candidates : %d' % len(stars))
 
     return stars
 
 
+def estimate_fwhm(img16):
+    """
+    Estimate mean FWHM of bright sources in image in Fourier space
 
+    Ref
+    ----
+    R. Mizutani et al., “Estimating the resolution of real images,”
+    J. Phys. Conf. Ser., vol. 849, no. 1, p. 012042, Jun. 2017 [Online].
+    Available: http://iopscience.iop.org/article/10.1088/1742-6596/849/1/012042/meta. [Accessed: 24-Oct-2018]
+
+    :param img16:
+    :return:
+    """
+
+    # Magnitude 2D FFT of entire image
+    img_k = np.abs(np.fft.fft2(img16))
+
+    # Crop to central region
+
+    # Create
+
+
+
+def estimate_background(img16):
+    """
+    Downsample, median filter and upsample to estimate smooth background
+    - catches nebulosity and residual gradients, amp glow, etc
+
+    :param img16: uint16 numpy array, original image
+    :return: bg16: uint16 numpy array, estimated background
+    """
+
+    from skimage.transform import rescale
+
+    # Isotropic, antialiased downsample by 10
+    i_dwn = rescale(img16, )
