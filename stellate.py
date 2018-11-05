@@ -77,7 +77,7 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Open a multifile chooser dialog
         fnames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,
             directory="",
-            filter="FITS images (*.fit)",
+            filter="FITS images (*.fit;*.fits)",
             options=options)
 
         if fnames:

@@ -1,4 +1,12 @@
-all: stellate_ui.py
+app_name = stellate
+app_py = $(app_name).py
+ui_py = $(app_name)_ui.py
+ui_qt = $(app_name).ui
 
-stellate_ui.py: stellate.ui
+all: $(ui_py)
+
+$(ui_py): $(ui_qt)
 	pyuic5 $< -o $@
+
+clean:
+	rm -rf $(ui_py)
