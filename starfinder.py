@@ -39,7 +39,7 @@ from skimage.restoration import estimate_sigma
 from skimage.measure import label, regionprops
 
 
-def starfinder(img16):
+def starfinder(img16, sbar):
     """
     Find likely stars in AP image
 
@@ -61,11 +61,11 @@ def starfinder(img16):
     mask = img16 > th
 
     # Remove objects < 9 pixels in size
-    print('  Removing small objects')
+    sbar.showMessage('Removing small objects', 250)
     mask_clean = remove_small_objects(mask, min_size=9)
 
     # Label connected regions
-    print('  Labeling connected regions')
+    sbar.showMessage('  Labeling connected regions', 250)
     label_image = label(mask_clean)
 
     # Note future proofing use of row-col coords
@@ -89,9 +89,9 @@ def starfinder(img16):
     area_th = np.percentile(star_area, 95.0)
     ecc_th = np.percentile(star_ecc, 50.0)
 
-    print('  Intensity threshold : %0.1f' % int_th)
-    print('  Area threshold : %0.1f pixels' % area_th)
-    print('  Eccentricity threshold : %0.1f' % ecc_th)
+    sbar.showMessage('  Intensity threshold : %0.1f' % int_th, 250)
+    sbar.showMessage('  Area threshold : %0.1f pixels' % area_th, 250)
+    sbar.showMessage('  Eccentricity threshold : %0.1f' % ecc_th, 250)
 
     # Compile list of good star candidates
     stars = []
@@ -99,13 +99,7 @@ def starfinder(img16):
         if r.mean_intensity > int_th:
             stars.append(r)
 
-    # Print summary
-    print('')
-    print('Starfinder Results')
-    print('  Noise sd        : %0.3f' % sd_n)
-    print('  Threshold       : %0.3f' % th)
-    print('  Potential stars : %d' % len(rprops))
-    print('  Good candidates : %d' % len(stars))
+    sbar.showMessage('Good candidates : %d' % len(stars))
 
     return stars
 

@@ -65,6 +65,10 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         self.ui.actionPercentileScale.triggered.connect(self.percentile_scale)
         self.ui.actionFindStars.triggered.connect(self.findstars)
 
+        # Clear histogram viewer
+        pl = self.ui.histogramView.getPlotItem()
+        pl.plot([0, 0])
+
     def choose_fits(self):
         """
         Open file chooser to select FITS file(s)
@@ -112,17 +116,21 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         self.ui.viewer.setImage(self.img16_stack[self.img_idx], reset=True)
 
     def linear_scale(self):
+
         imin, imax = 0, 16000
         self.ui.viewer.set_scaling('linear', imin, imax)
 
     def percentile_scale(self):
+
         pmin, pmax = 5.0, 95.0
         self.ui.viewer.set_scaling('percentile', pmin, pmax)
 
     def findstars(self):
-        # Trigger a star search in the current image
+
         if self.num_imgs > 0:
-            self.stars = starfinder(self.img16_stack[self.img_idx])
+            img = self.img16_stack[self.img_idx]
+            sbar = self.ui.statusbar
+            self.stars = starfinder(img, sbar)
             self.ui.viewer.showstars(self.stars)
 
     def keyPressEvent(self, event):
