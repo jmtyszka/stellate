@@ -54,7 +54,7 @@ class imgViewer(QtWidgets.QGraphicsView):
         # Internal variables
         self._zoom = 0
         self._empty = True
-        self._autostretch = False
+        self._scaling_mode = 'linear'
 
         # Scene components
         self._scene = QtWidgets.QGraphicsScene(self)
@@ -128,7 +128,7 @@ class imgViewer(QtWidgets.QGraphicsView):
 
         if self.hasImage():
 
-            if self._autostretch:
+            if 'percentile' in self._scaling_mode:
                 ilims = 0.0, np.percentile(self._img16, 95.0)
             else:
                 ilims = 0.0, np.max(self._img16)
@@ -202,6 +202,6 @@ class imgViewer(QtWidgets.QGraphicsView):
     def keyPressEvent(self, event):
             event.ignore()
 
-    def autostretch(self, status):
-        self._autostretch = status
+    def set_scaling(self, scaling_mode):
+        self._scaling = scaling_mode
         self.exposeImage()

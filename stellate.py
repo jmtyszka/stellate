@@ -61,7 +61,8 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         self.ui.actionOpen_FITS.triggered.connect(self.choose_fits)
 
         # Button callbacks
-        self.ui.actionAutoStretch.triggered.connect(self.autostretch)
+        self.ui.actionLinearScale.triggered.connect(self.linear_scale)
+        self.ui.actionPercentileScale.triggered.connect(self.percentile_scale)
         self.ui.actionFindStars.triggered.connect(self.findstars)
 
     def choose_fits(self):
@@ -110,9 +111,13 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         self.num_imgs = len(img_stack)
         self.ui.viewer.setImage(self.img16_stack[self.img_idx], reset=True)
 
-    def autostretch(self):
-        # Pass Auto Stretch button status to viewer and repaint
-        self.ui.viewer.autostretch(self.ui.autoStretchButton.isChecked())
+    def linear_scale(self):
+        imin, imax = 0, 16000
+        self.ui.viewer.set_scaling('linear', imin, imax)
+
+    def percentile_scale(self):
+        pmin, pmax = 5.0, 95.0
+        self.ui.viewer.set_scaling('percentile', pmin, pmax)
 
     def findstars(self):
         # Trigger a star search in the current image
