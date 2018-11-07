@@ -32,11 +32,10 @@ You should have received a copy of the GNU General Public License
 along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import numpy as np
 from skimage.exposure import rescale_intensity
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
-from starfinder import *
+from stellate.starfinder import *
 
 
 class imgViewer(QtWidgets.QGraphicsView):
@@ -55,6 +54,7 @@ class imgViewer(QtWidgets.QGraphicsView):
         self._zoom = 0
         self._empty = True
         self._scaling_mode = 'linear'
+        self._ilims = 0, 1
 
         # Scene components
         self._scene = QtWidgets.QGraphicsScene(self)
@@ -80,39 +80,20 @@ class imgViewer(QtWidgets.QGraphicsView):
         self.setBackgroundBrush(QBrush(QColor(30, 30, 30)))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
-    def hasImage(self):
+    def has_image(self):
         return not self._empty
 
-    def fitInView(self, scale=True):
-
-        rect = QtCore.QRectF(self._image.pixmap().rect())
-
-        if not rect.isNull():
-            self.setSceneRect(rect)
-
-            if self.hasImage():
-
-                unity = self.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
-                self.scale(1 / unity.width(), 1 / unity.height())
-
-                viewrect = self.viewport().rect()
-                scenerect = self.transform().mapRect(rect)
-
-                factor = min(viewrect.width() / scenerect.width(),
-                             viewrect.height() / scenerect.height())
-
-                self.scale(factor, factor)
-
-            self._zoom = 0
-
-    def setImage(self, img16=None, reset=False):
+    def set_image(self, img16=None, reset=False):
 
         if img16.any():
 
             self._img16 = img16.copy()
             self._empty = False
             self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
-            self.exposeImage()
+
+            self.image_histogram()
+
+            self.expose_image()
 
         else:
 
@@ -124,14 +105,20 @@ class imgViewer(QtWidgets.QGraphicsView):
         if reset:
             self.fitInView()
 
-    def exposeImage(self):
+    def image_histogram(self):
 
-        if self.hasImage():
+        # Get histogram widget from main window
+        hist_widget = self.parent
+
+
+    def expose_image(self):
+
+        if self.has_image():
 
             if 'percentile' in self._scaling_mode:
                 ilims = 0.0, np.percentile(self._img16, 95.0)
             else:
-                ilims = 0.0, np.max(self._img16)
+                ilims = self._ilims
 
             # Rescale to uint8
             self._img8 = rescale_intensity(self._img16, in_range=ilims, out_range=(0, 255)).astype(np.uint8)
@@ -143,7 +130,7 @@ class imgViewer(QtWidgets.QGraphicsView):
             # Place image pixmap in scene
             self._image.setPixmap(img_pixmap)
 
-    def showstars(self, stars):
+    def show_stars(self, stars):
         """
         Fill star overlay group item with green star bboxes
 
@@ -165,6 +152,39 @@ class imgViewer(QtWidgets.QGraphicsView):
             # Add bbox to star overlay group
             self._staroverlay.addToGroup(star_rect)
 
+    def set_scaling(self, scaling_mode, ilims):
+
+        self._scaling_mode = scaling_mode
+        self._ilims = ilims
+
+        self.expose_image()
+
+    #
+    # Override methods
+    #
+
+    def fitInView(self, scale=True):
+
+        rect = QtCore.QRectF(self._image.pixmap().rect())
+
+        if not rect.isNull():
+            self.setSceneRect(rect)
+
+            if self.has_image():
+
+                unity = self.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
+                self.scale(1 / unity.width(), 1 / unity.height())
+
+                viewrect = self.viewport().rect()
+                scenerect = self.transform().mapRect(rect)
+
+                factor = min(viewrect.width() / scenerect.width(),
+                             viewrect.height() / scenerect.height())
+
+                self.scale(factor, factor)
+
+            self._zoom = 0
+
     def wheelEvent(self, event):
         """
         Handle image zoom
@@ -173,7 +193,7 @@ class imgViewer(QtWidgets.QGraphicsView):
         :return:
         """
 
-        if self.hasImage():
+        if self.has_image():
 
             dphi = event.angleDelta().y()
 
@@ -200,8 +220,5 @@ class imgViewer(QtWidgets.QGraphicsView):
         super(imgViewer, self).mousePressEvent(event)
 
     def keyPressEvent(self, event):
-            event.ignore()
 
-    def set_scaling(self, scaling_mode):
-        self._scaling = scaling_mode
-        self.exposeImage()
+            event.ignore()

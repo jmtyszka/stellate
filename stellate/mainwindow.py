@@ -29,12 +29,12 @@ You should have received a copy of the GNU General Public License
 along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import sys
 import numpy as np
 from PyQt5 import QtWidgets, QtCore
 from astropy.io import fits
-from stellate_ui import Ui_MainWindow
-from starfinder import starfinder
+from stellate.stellate_ui import Ui_MainWindow
+from stellate.starfinder import starfinder
+import pyqtgraph as pg
 
 
 class StellateMainWindow(QtWidgets.QMainWindow):
@@ -61,13 +61,32 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         self.ui.actionOpen_FITS.triggered.connect(self.choose_fits)
 
         # Button callbacks
-        self.ui.actionLinearScale.triggered.connect(self.linear_scale)
-        self.ui.actionPercentileScale.triggered.connect(self.percentile_scale)
-        self.ui.actionFindStars.triggered.connect(self.findstars)
+        self.ui.actionFindStars.triggered.connect(self.find_stars)
 
-        # Clear histogram viewer
+        # Setup intensity histogram
+        self.setup_histogram()
+
+    def setup_histogram(self):
+
+        # Get histogram plot item from widget
         pl = self.ui.histogramView.getPlotItem()
-        pl.plot([0, 0])
+
+        # Add intensity range selector to plot
+        x, y = [0, 2^14], [1, 1]
+        self.histogram = pl.plot(x, y)
+        self.irange_sel = pg.LinearRegionItem()
+        pl.addItem(self.irange_sel)
+
+        # Connect selector to image viewer
+        self.irange_sel.sigRegionChangeFinished.connect(self.update_image_scaling)
+
+    def update_histogram(self):
+
+        # Construct intensity histogram for current image
+        f, x = np.histogram(self.img16_stack[self.img_idx], bins=100)
+
+        self.histogram.setData(x[:-1], f)
+
 
     def choose_fits(self):
         """
@@ -89,9 +108,6 @@ class StellateMainWindow(QtWidgets.QMainWindow):
             self.load_fits(fnames)
 
     def load_fits(self, fnames):
-        # Load one or more FITS images into working memory
-
-        print('Attempting to load %d FITS images' % len(fnames))
 
         # Init image stack
         img_stack = []
@@ -99,13 +115,13 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Load image stack
         for fname in fnames:
 
-            print('  Loading %s' % fname)
-
             try:
                 with fits.open(fname) as hdu_list:
                     img_stack.append(hdu_list[0].data)
             except:
-                print('* Problem loading %s - skipping' % fname)
+                self.ui.statusbar.showMessage("* Problem loading %s" % fname)
+
+        self.ui.statusbar.showMessage("Loaded %d FITS images" % len(fnames))
 
         # Save the image stack in the app
         self.img16_stack = img_stack
@@ -113,25 +129,21 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Pass first image in FITS stack to the viewer
         self.img_idx = 0
         self.num_imgs = len(img_stack)
-        self.ui.viewer.setImage(self.img16_stack[self.img_idx], reset=True)
+        self.ui.viewer.set_image(self.img16_stack[self.img_idx], reset=True)
 
-    def linear_scale(self):
+        # Update the intensity histogram
+        self.update_histogram()
 
-        imin, imax = 0, 16000
-        self.ui.viewer.set_scaling('linear', imin, imax)
+    def update_image_scaling(self):
+        self.ui.viewer.set_scaling('linear', self.irange_sel.getRegion())
 
-    def percentile_scale(self):
-
-        pmin, pmax = 5.0, 95.0
-        self.ui.viewer.set_scaling('percentile', pmin, pmax)
-
-    def findstars(self):
+    def find_stars(self):
 
         if self.num_imgs > 0:
             img = self.img16_stack[self.img_idx]
             sbar = self.ui.statusbar
             self.stars = starfinder(img, sbar)
-            self.ui.viewer.showstars(self.stars)
+            self.ui.viewer.show_stars(self.stars)
 
     def keyPressEvent(self, event):
         """
@@ -155,16 +167,5 @@ class StellateMainWindow(QtWidgets.QMainWindow):
                 pass
 
             # Update displayed image in viewer
-            self.ui.viewer.setImage(self.img16_stack[self.img_idx])
-
-
-# Main entry point
-if __name__ == "__main__":
-
-    app = QtWidgets.QApplication(sys.argv)
-
-    window = StellateMainWindow()
-    window.show()
-
-    sys.exit(app.exec_())
+            self.ui.viewer.set_image(self.img16_stack[self.img_idx])
 
