@@ -34,7 +34,6 @@ from PyQt5 import QtWidgets, QtCore
 from astropy.io import fits
 from stellate.stellate_ui import Ui_MainWindow
 from stellate.starfinder import starfinder
-import pyqtgraph as pg
 
 
 class StellateMainWindow(QtWidgets.QMainWindow):
@@ -63,31 +62,6 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Button callbacks
         self.ui.actionFindStars.triggered.connect(self.find_stars)
 
-        # Setup intensity histogram
-        self.setup_histogram()
-
-    def setup_histogram(self):
-
-        # Get histogram plot item from widget
-        pl = self.ui.histogramView.getPlotItem()
-
-        # Add intensity range selector to plot
-        x, y = [0, 2^14], [1, 1]
-        self.histogram = pl.plot(x, y)
-        self.irange_sel = pg.LinearRegionItem()
-        pl.addItem(self.irange_sel)
-
-        # Connect selector to image viewer
-        self.irange_sel.sigRegionChangeFinished.connect(self.update_image_scaling)
-
-    def update_histogram(self):
-
-        # Construct intensity histogram for current image
-        f, x = np.histogram(self.img16_stack[self.img_idx], bins=100)
-
-        self.histogram.setData(x[:-1], f)
-
-
     def choose_fits(self):
         """
         Open file chooser to select FITS file(s)
@@ -99,43 +73,49 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         options = QtWidgets.QFileDialog.Options()
 
         # Open a multifile chooser dialog
-        fnames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,
+        self.fnames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,
             directory="",
             filter="FITS images (*.fit;*.fits)",
             options=options)
 
-        if fnames:
-            self.load_fits(fnames)
+        if self.fnames:
+            self.load_fits()
 
-    def load_fits(self, fnames):
+    def load_fits(self):
 
         # Init image stack
-        img_stack = []
+        self.imgs = []
+        self.fits_hdrs = []
 
         # Load image stack
-        for fname in fnames:
+        for fname in self.fnames:
 
             try:
                 with fits.open(fname) as hdu_list:
-                    img_stack.append(hdu_list[0].data)
+                    self.imgs.append(hdu_list[0].data)
+                    self.fits_hdrs.append(hdu_list[0].header)
             except:
                 self.ui.statusbar.showMessage("* Problem loading %s" % fname)
 
-        self.ui.statusbar.showMessage("Loaded %d FITS images" % len(fnames))
+        self.img_idx = 0
+        self.num_imgs = len(self.imgs)
 
-        # Save the image stack in the app
-        self.img16_stack = img_stack
+        # Update image info fields in UI
+        self.update_info()
 
         # Pass first image in FITS stack to the viewer
-        self.img_idx = 0
-        self.num_imgs = len(img_stack)
-        self.ui.viewer.set_image(self.img16_stack[self.img_idx], reset=True)
+        self.ui.imageViewer.set_image(self.imgs[self.img_idx])
 
-        # Update the intensity histogram
-        self.update_histogram()
+    def update_info(self):
 
-    def update_image_scaling(self):
-        self.ui.viewer.set_scaling('linear', self.irange_sel.getRegion())
+        self.ui.fnameText.setText(self.fnames[self.img_idx])
+        self.ui.indexText.setText('%d of %d' % (self.img_idx+1, self.num_imgs))
+
+        hdr = self.fits_hdrs[self.img_idx]
+
+        # TODO: Setup a FITS header parse that handles missing tags
+        self.ui.targetText.setText(hdr['OBJECT'])
+        self.ui.dimText.setText('%d x %d' % (hdr['NAXIS1'], hdr['NAXIS2']))
 
     def find_stars(self):
 
@@ -143,7 +123,7 @@ class StellateMainWindow(QtWidgets.QMainWindow):
             img = self.img16_stack[self.img_idx]
             sbar = self.ui.statusbar
             self.stars = starfinder(img, sbar)
-            self.ui.viewer.show_stars(self.stars)
+            self.ui.imageViewer.show_stars(self.stars)
 
     def keyPressEvent(self, event):
         """
@@ -167,5 +147,5 @@ class StellateMainWindow(QtWidgets.QMainWindow):
                 pass
 
             # Update displayed image in viewer
-            self.ui.viewer.set_image(self.img16_stack[self.img_idx])
+            self.ui.imageViewer.set_image(self.imgs[self.img_idx])
 

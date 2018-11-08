@@ -24,44 +24,43 @@ from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
 
-win = pg.GraphicsWindow(title="Basic plotting examples")
-win.resize(1000,600)
-win.setWindowTitle('pyqtgraph example: Plotting')
+app = QtGui.QApplication([])
+win = QtGui.QMainWindow()
+win.resize(800,600)
+win.show()
+win.setWindowTitle('pyqtgraph example: Histogram LUT')
 
-# Enable antialiasing for prettier plots
-pg.setConfigOptions(antialias=True)
+cw = QtGui.QWidget()
+win.setCentralWidget(cw)
 
-x2 = np.linspace(-100, 100, 1000)
-data = np.sin(x2) / x2
+l = QtGui.QGridLayout()
+cw.setLayout(l)
+l.setSpacing(0)
 
-p1 = win.addPlot(title="Region Selection")
-p1.plot(data, pen=(255, 255, 255, 200))
+v = pg.GraphicsView()
+vb = pg.ViewBox()
+vb.setAspectLocked()
+v.setCentralItem(vb)
+l.addWidget(v, 0, 0)
 
-# Add linear region selector to p1
-lr = pg.LinearRegionItem([400,700])
-lr.setZValue(-10)  # region selector drawn behind graph
-p1.addItem(lr)
+w = pg.HistogramLUTWidget()
+l.addWidget(w, 0, 1)
 
-p2 = win.addPlot(title="Zoom on selected region")
-p2.plot(data, fillLevel=0.0, brush=(50, 50, 200, 100))
-p2.showAxis('left', False)
+data = pg.gaussianFilter(np.random.normal(size=(256, 256)), (20, 20))
+for i in range(32):
+    for j in range(32):
+        data[i*8, j*8] += .1
+img = pg.ImageItem(data)
+#data2 = np.zeros((2,) + data.shape + (2,))
+#data2[0,:,:,0] = data  ## make non-contiguous array for testing purposes
+#img = pg.ImageItem(data2[0,:,:,0])
+vb.addItem(img)
+vb.autoRange()
 
-# Callback functions
-def updatePlot():
-    p2.setXRange(*lr.getRegion(), padding=0)
+w.setImageItem(img)
 
-def updateRegion():
-    lr.setRegion(p2.getViewBox().viewRange()[0])
 
-# If region changed in p1, update p2 x-axis
-lr.sigRegionChanged.connect(updatePlot)
-
-# If x-axis changed in p2, update region in p1
-p2.sigXRangeChanged.connect(updateRegion)
-
-updatePlot()
-
-## Start Qt event loop unless running in interactive mode or using pyside.
+## Start Qt event loop unless running in interactive mode.
 if __name__ == '__main__':
     import sys
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
