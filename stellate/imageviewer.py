@@ -46,19 +46,26 @@ class imageviewer(pg.GraphicsView):
         # Init the base class
         super().__init__()
 
+        # Setup PyQtGraph configuration options
+        pg.setConfigOption('antialias', True)
+        pg.setConfigOption('imageAxisOrder', 'row-major')
+
         self._layout = pg.GraphicsLayout()
         self.setCentralItem(self._layout)
         self.show()
 
-        self._img_box = pg.ViewBox()
-        self._img_box.setAspectLocked(True)
-        self._layout.addItem(self._img_box)
+        self._image_view = pg.ViewBox()
+        self._image_view.setAspectLocked(True)
+        self._layout.addItem(self._image_view)
 
-        # Create a noise image as a placeholder
-        self._img = np.random.normal(size=(3100, 2100))
-        self._img_item = pg.ImageItem(self._img)
-        self._img_box.addItem(self._img_item)
+        # Add image item to image view
+        self._image_item = pg.ImageItem()
+        self._image_view.addItem(self._image_item)
         self._has_image = True
+
+        # Add star tag overlay group
+        self._star_tags = QtWidgets.QGraphicsItemGroup()
+        self._image_view.addItem(self._star_tags)
 
         # Add histogram with range bars below image
         self._hist_item = pg.PlotItem()
@@ -73,11 +80,15 @@ class imageviewer(pg.GraphicsView):
         # Connect limit slider signals to image contrast adjustment
         self._hlims_item.sigRegionChangeFinished.connect(self.update_image)
 
+        dummy_image = np.random.normal(size=(2100, 3100))
+        self.set_image(dummy_image)
+        self.update_histogram()
+
     def set_image(self, img=None):
 
         if img.any():
             self._has_image = True
-            self._img = img.copy()
+            self._img = img
             self.update_histogram()
             self.update_image()
         else:
@@ -102,24 +113,57 @@ class imageviewer(pg.GraphicsView):
             ilims = self._hlims_item.getRegion()
 
             # Rescale image intensities
-            img_adj = rescale_intensity(self._img, in_range=ilims, out_range='uint8')
+            img_adj = rescale_intensity(self._img, in_range=ilims, out_range='uint16')
 
-            # Replace image data in image item
-            self._img_item.setImage(img_adj.transpose())
+            # Correct for row-col rendering
+            # img_adj = np.rot90(img_adj)
+
+            # Replace image data in the ImageItem
+            self._image_item.setImage(img_adj, autoDownsample=True)
 
     def show_stars(self, stars):
-        #
-        # for s in stars:
-        #
-        #     bb = s.bbox
-        #     x, y = bb[1], bb[0]
-        #     w, h = bb[3]-bb[1], bb[2]-bb[0]
-        #
-        #     # Green bbox, width 1
-        #     star_rect = QtWidgets.QGraphicsRectItem(x, y, w, h)
-        #     pen = QPen(QColor('#00FF00'), 1)
-        #     star_rect.setPen(pen)
-        #
-        #     # Add bbox to star overlay group
-        #     self._staroverlay.addToGroup(star_rect)
-        pass
+        """
+        stars is a list of star region properties [rr, cc, diam, circ]
+        - rr, cc : row, col of intensity weighted centroid in image space
+        - diam   : equivalent circle diameter
+        - circ   : region circularity (1.0 = perfect circle)
+
+        :param stars: list of star ROI properties
+        :return:
+        """
+
+        # Green pen for tags
+        pen = QtGui.QPen(QtGui.QColor('#00FF00'), 1)
+
+        # Create a group for the tags
+        self._star_tags = QtWidgets.QGraphicsItemGroup()
+
+        for s in stars:
+
+            yy, xx, d, c = s
+
+            r = d * 0.75
+
+            # Tag above
+            tag0 = QtWidgets.QGraphicsLineItem(xx, yy+r, xx, yy+2*r)
+            tag0.setPen(pen)
+
+            # Tag below
+            tag1 = QtWidgets.QGraphicsLineItem(xx, yy-r, xx, yy-2*r)
+            tag1.setPen(pen)
+
+            # Tag left
+            tag2 = QtWidgets.QGraphicsLineItem(xx-r, yy, xx-2*r, yy)
+            tag2.setPen(pen)
+
+            # Tag right
+            tag3 = QtWidgets.QGraphicsLineItem(xx+r, yy, xx+2*r, yy)
+            tag3.setPen(pen)
+
+            # Add tags to overlay group
+            self._star_tags.addToGroup(tag0)
+            self._star_tags.addToGroup(tag1)
+            self._star_tags.addToGroup(tag2)
+            self._star_tags.addToGroup(tag3)
+
+        self._image_view.addItem(self._star_tags)

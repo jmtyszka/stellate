@@ -34,6 +34,7 @@ from PyQt5 import QtWidgets, QtCore
 from astropy.io import fits
 from stellate.stellate_ui import Ui_MainWindow
 from stellate.starfinder import starfinder
+from stellate.astrostack load astrostack
 
 
 class StellateMainWindow(QtWidgets.QMainWindow):
@@ -54,7 +55,7 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Init image storage
         self.num_imgs = 0
         self.img_idx = 0
-        self.img16_stack = []
+        self.imgs = []
 
         # Menu callbacks
         self.ui.actionOpen_FITS.triggered.connect(self.choose_fits)
@@ -73,7 +74,7 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         options = QtWidgets.QFileDialog.Options()
 
         # Open a multifile chooser dialog
-        self.fnames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,
+        fnames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,
             directory="",
             filter="FITS images (*.fit;*.fits)",
             options=options)
@@ -83,22 +84,8 @@ class StellateMainWindow(QtWidgets.QMainWindow):
 
     def load_fits(self):
 
-        # Init image stack
-        self.imgs = []
-        self.fits_hdrs = []
-
-        # Load image stack
-        for fname in self.fnames:
-
-            try:
-                with fits.open(fname) as hdu_list:
-                    self.imgs.append(hdu_list[0].data)
-                    self.fits_hdrs.append(hdu_list[0].header)
-            except:
-                self.ui.statusbar.showMessage("* Problem loading %s" % fname)
-
-        self.img_idx = 0
-        self.num_imgs = len(self.imgs)
+        # Load stack of FITS images
+        self.img_stack = astrostack(fnames)
 
         # Update image info fields in UI
         self.update_info()
@@ -120,7 +107,7 @@ class StellateMainWindow(QtWidgets.QMainWindow):
     def find_stars(self):
 
         if self.num_imgs > 0:
-            img = self.img16_stack[self.img_idx]
+            img = self.imgs[self.img_idx]
             sbar = self.ui.statusbar
             self.stars = starfinder(img, sbar)
             self.ui.imageViewer.show_stars(self.stars)
