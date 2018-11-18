@@ -31,10 +31,8 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 from PyQt5 import QtWidgets, QtCore
-from astropy.io import fits
 from stellate.stellate_ui import Ui_MainWindow
-from stellate.starfinder import starfinder
-from stellate.astrostack load astrostack
+from stellate.astrostack import AstroStack
 
 
 class StellateMainWindow(QtWidgets.QMainWindow):
@@ -53,17 +51,17 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         # Init image storage
-        self.num_imgs = 0
-        self.img_idx = 0
-        self.imgs = []
+        self._n_imgs = 0
+        self._img_idx = 0
+        self._stack = AstroStack([])
 
         # Menu callbacks
-        self.ui.actionOpen_FITS.triggered.connect(self.choose_fits)
+        self.ui.actionOpen_FITS.triggered.connect(self.load_fits)
 
         # Button callbacks
         self.ui.actionFindStars.triggered.connect(self.find_stars)
 
-    def choose_fits(self):
+    def load_fits(self):
         """
         Open file chooser to select FITS file(s)
 
@@ -79,26 +77,27 @@ class StellateMainWindow(QtWidgets.QMainWindow):
             filter="FITS images (*.fit;*.fits)",
             options=options)
 
-        if self.fnames:
-            self.load_fits()
+        if len(fnames) > 0:
 
-    def load_fits(self):
+            # Load selected FITS images into an AstroStack object
+            self._stack = AstroStack(fnames)
 
-        # Load stack of FITS images
-        self.img_stack = astrostack(fnames)
+            # Update image info fields in UI
+            self.update_info()
 
-        # Update image info fields in UI
-        self.update_info()
-
-        # Pass first image in FITS stack to the viewer
-        self.ui.imageViewer.set_image(self.imgs[self.img_idx])
+            # Pass first image in FITS stack to the viewer
+            img = self._stack.get_img(self._img_idx)
+            self.ui.imageViewer.set_image(img)
 
     def update_info(self):
 
-        self.ui.fnameText.setText(self.fnames[self.img_idx])
-        self.ui.indexText.setText('%d of %d' % (self.img_idx+1, self.num_imgs))
+        ii = self._img_idx
+        fname = self._stack.get_fname(ii)
 
-        hdr = self.fits_hdrs[self.img_idx]
+        self.ui.fnameText.setText(fname)
+        self.ui.indexText.setText('%d of %d' % (ii+1, len(self._stack)))
+
+        hdr = self._stack.get_hdr(ii)
 
         # TODO: Setup a FITS header parse that handles missing tags
         self.ui.targetText.setText(hdr['OBJECT'])
@@ -106,15 +105,12 @@ class StellateMainWindow(QtWidgets.QMainWindow):
 
     def find_stars(self):
 
-        if self.num_imgs > 0:
-            img = self.imgs[self.img_idx]
-            sbar = self.ui.statusbar
-            self.stars = starfinder(img, sbar)
-            self.ui.imageViewer.show_stars(self.stars)
+        stars_df = self._stack.get_stars(self._img_idx)
+        self.ui.imageViewer.show_stars(stars_df)
 
     def keyPressEvent(self, event):
         """
-        Handle main window key presses
+        Handle arrow keys for image number selection
 
         :param event:
         :return:
@@ -122,17 +118,17 @@ class StellateMainWindow(QtWidgets.QMainWindow):
 
         key = event.key()
 
-        if self.num_imgs > 0:
+        if len(self._stack) > 0:
 
-            ni, ii = self.num_imgs, self.img_idx
+            ni, ii = len(self._stack), self._img_idx
 
             if key == QtCore.Qt.Key_Up:
-                self.img_idx = np.mod(ii + 1, ni)
+                self._img_idx = np.mod(ii + 1, ni)
             elif key == QtCore.Qt.Key_Down:
-                self.img_idx = np.mod(ii + ni - 1, ni)
+                self._img_idx = np.mod(ii + ni - 1, ni)
             else:
                 pass
 
             # Update displayed image in viewer
-            self.ui.imageViewer.set_image(self.imgs[self.img_idx])
+            self.ui.imageViewer.set_image(self._stack.get_img(self._img_idx))
 

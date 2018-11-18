@@ -29,38 +29,67 @@ You should have received a copy of the GNU General Public License
 along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from stellate.astroimage import astroimage
+from stellate.astroimage import AstroImage
 
-class astrostack():
 
-    def __init__(self, fnames):
+class AstroStack():
 
+    def __init__(self, fnames, in_mem=True):
+
+        # Public attributes (get and set)
+        self.ref_index = 0
+
+        # Protected attributes
         self._fnames = fnames
-        self._imgs = []
-        self._ref_index = 0
+        self._stack = []
 
-        # Populate image stack
         for fname in fnames:
-            self._imgs.append(astroimage(fname))
+            print('  Loading %s into memory' % fname)
+            self._stack.append(AstroImage(fname, in_mem))
 
-        self.img_idx = 0
-        self._n_imgs = len(self._imgs)
+    def __len__(self):
+        return len(self._stack)
+
+    def get_fname(self, idx=0):
+        if self.idx_in_range(idx):
+            fname = self._stack[idx].get_fname()
+        else:
+            fname = []
+        return fname
+
+    def get_hdr(self, idx=0):
+        if self.idx_in_range(idx):
+            hdr = self._stack[idx].get_hdr()
+        else:
+            hdr = []
+        return hdr
+
+    def get_img(self, idx=0):
+        if self.idx_in_range(idx):
+            img = self._stack[idx].get_img()
+        else:
+            img = []
+        return img
+
+    def get_stars(self, idx=0):
+        if self.idx_in_range(idx):
+            stars = self._stack[idx].find_stars()
+        else:
+            stars = []
+        return stars
+
+    def idx_in_range(self, idx):
+        return idx >= 0 and idx < len(self)
 
     def register(self):
 
-        stars = []
+        # Run star finder on each image in the stack
+        for fname in self._fnames:
 
-        for img in img_stack:
-
-            stars_info, FWHM = starfinder(img)
-            stars.append(stars_info)
+            aimg = AstroImage(fname)
+            stars = aimg.find_stars(write_json=True)
 
     def combine(self):
 
-        if "sigmoid" in self._combiner:
-            print('Combing images using sigmoid')
-            pass
-
-        if "median" in self._combiner:
-            print('Combing images using median')
-            pass
+        print('Combining images using median')
+        pass

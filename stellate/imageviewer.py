@@ -33,7 +33,8 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 
 from skimage.exposure import rescale_intensity
-from stellate.starfinder import *
+from stellate.astroimage import AstroImage
+from stellate.astrostack import AstroStack
 
 from pyqtgraph.Qt import QtGui, QtWidgets
 import pyqtgraph as pg
@@ -86,7 +87,7 @@ class imageviewer(pg.GraphicsView):
 
     def set_image(self, img=None):
 
-        if img.any():
+        if img.size > 0:
             self._has_image = True
             self._img = img
             self.update_histogram()
@@ -121,14 +122,14 @@ class imageviewer(pg.GraphicsView):
             # Replace image data in the ImageItem
             self._image_item.setImage(img_adj, autoDownsample=True)
 
-    def show_stars(self, stars):
+    def show_stars(self, stars_df):
         """
         stars is a list of star region properties [rr, cc, diam, circ]
         - rr, cc : row, col of intensity weighted centroid in image space
         - diam   : equivalent circle diameter
         - circ   : region circularity (1.0 = perfect circle)
 
-        :param stars: list of star ROI properties
+        :param stars: Pandas dataframe, star metrics
         :return:
         """
 
@@ -138,9 +139,9 @@ class imageviewer(pg.GraphicsView):
         # Create a group for the tags
         self._star_tags = QtWidgets.QGraphicsItemGroup()
 
-        for s in stars:
+        for index, row in stars_df.iterrows():
 
-            yy, xx, d, c = s
+            yy, xx, d, c = row['rc'], row['cc'], row['diam'], row['circ']
 
             r = d * 0.75
 
