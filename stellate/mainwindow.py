@@ -60,6 +60,7 @@ class StellateMainWindow(QtWidgets.QMainWindow):
 
         # Button callbacks
         self.ui.actionFindStars.triggered.connect(self.find_stars)
+        self.ui.actionRegisterStack.triggered.connect(self.register_stack)
 
     def load_fits(self):
         """
@@ -107,6 +108,9 @@ class StellateMainWindow(QtWidgets.QMainWindow):
 
         stars_df = self._stack.get_stars(self._img_idx)
         self.ui.imageViewer.show_stars(stars_df)
+
+    def register_stack(self):
+        self._stack.register()
 
     def keyPressEvent(self, event):
         """

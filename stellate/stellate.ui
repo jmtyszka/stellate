@@ -51,7 +51,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabView">
        <attribute name="title">
@@ -454,16 +454,35 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QPushButton" name="pushButton">
-          <property name="maximumSize">
-           <size>
-            <width>250</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Select Images to Register</string>
-          </property>
+         <widget class="QWidget" name="widget_3" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QPushButton" name="registerStackButton">
+             <property name="maximumSize">
+              <size>
+               <width>1677215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Register Stack</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
          </widget>
         </item>
         <item>
@@ -639,6 +658,11 @@
     <string>Ctrl+F</string>
    </property>
   </action>
+  <action name="actionRegisterStack">
+   <property name="text">
+    <string>RegisterStack</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -674,6 +698,22 @@
     <hint type="sourcelabel">
      <x>295</x>
      <y>537</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>registerStackButton</sender>
+   <signal>clicked()</signal>
+   <receiver>actionRegisterStack</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>106</x>
+     <y>72</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>

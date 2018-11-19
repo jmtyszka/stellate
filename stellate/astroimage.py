@@ -83,10 +83,13 @@ class AstroImage:
         except:
             print("* Problem loading %s" % fname)
 
-    def find_stars(self, find_again=True, write_sidecar=False):
+    def find_stars(self, find_again=False, write_sidecar=False):
         """
         Find likely stars in AP image
         """
+
+        print('')
+        print('Star Finder')
 
         if not self._has_stars:
 
@@ -188,6 +191,7 @@ class AstroImage:
 
     def write_stars(self):
         try:
+            print('  Saving stars to %s' % self._stars_fname)
             self._stars.to_json(self._stars_fname)
         except:
             print('* Problem writing stars to %s' % self._stars_fname)
