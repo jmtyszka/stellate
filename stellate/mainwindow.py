@@ -53,7 +53,7 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Init image storage
         self._n_imgs = 0
         self._img_idx = 0
-        self._stack = AstroStack([])
+        self._stack = AstroStack()
 
         # Menu callbacks
         self.ui.actionOpen_FITS.triggered.connect(self.load_fits)
@@ -61,12 +61,11 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Button callbacks
         self.ui.actionFindStars.triggered.connect(self.find_stars)
         self.ui.actionRegisterStack.triggered.connect(self.register_stack)
+        self.ui.actionAverageStack.triggered.connect(self.combine_stack)
 
     def load_fits(self):
         """
-        Open file chooser to select FITS file(s)
-
-        :return:
+        Select and load one or more FITS images
         """
 
         # Setup file dialog options
@@ -83,34 +82,59 @@ class StellateMainWindow(QtWidgets.QMainWindow):
             # Load selected FITS images into an AstroStack object
             self._stack = AstroStack(fnames)
 
-            # Update image info fields in UI
-            self.update_info()
+            # Reset current image index
+            self._img_idx = 0
 
-            # Pass first image in FITS stack to the viewer
-            img = self._stack.get_img(self._img_idx)
-            self.ui.imageViewer.set_image(img)
+            # Update all tabs dependent on current image
+            self.update_metatext()
+            self.update_viewer()
 
-    def update_info(self):
+    def update_viewer(self):
+        """
+        Update image displayed in the image viewer
+        """
+
+        # Get current astroimage from stack
+        aimg = self._stack.astroimage(self._img_idx)
+
+        # Pass astroimage and scale settings to image viewer
+        self.ui.imageViewer.set_image(aimg, self.scale_settings())
+
+    def update_metatext(self):
 
         ii = self._img_idx
-        fname = self._stack.get_fname(ii)
+        fname = self._stack.filename(ii)
 
         self.ui.fnameText.setText(fname)
         self.ui.indexText.setText('%d of %d' % (ii+1, len(self._stack)))
 
-        hdr = self._stack.get_hdr(ii)
+        # Update the metadata display
+        self.ui.FITSMetaText.show_metadata(self._stack.metadata(ii))
 
-        # TODO: Setup a FITS header parse that handles missing tags
-        self.ui.targetText.setText(hdr['OBJECT'])
-        self.ui.dimText.setText('%d x %d' % (hdr['NAXIS1'], hdr['NAXIS2']))
+    def scale_settings(self):
+        """
+        Pull scale min, max and mode from UI
+        """
+
+        # Sliders range from 0.0 to 100.0 in 1.0 steps
+        smin = self.ui.minLevelSlider.value()
+        smax = self.ui.maxLevelSlider.value()
+        sperc = self.ui.percentileLevels.isChecked()
+
+        self._scale_settings = smin, smax, sperc
+
+        return self._scale_settings
 
     def find_stars(self):
 
-        stars_df = self._stack.get_stars(self._img_idx)
+        stars_df = self._stack.stars(self._img_idx)
         self.ui.imageViewer.show_stars(stars_df)
 
     def register_stack(self):
         self._stack.register()
+
+    def combine_stack(self):
+        self._stack.combine()
 
     def keyPressEvent(self, event):
         """
@@ -133,6 +157,9 @@ class StellateMainWindow(QtWidgets.QMainWindow):
             else:
                 pass
 
+            # Update meta data, etc in GUI
+            self.update_metatext()
+
             # Update displayed image in viewer
-            self.ui.imageViewer.set_image(self._stack.get_img(self._img_idx))
+            self.ui.imageViewer.set_image(self._stack.astroimage(self._img_idx), self.scale_settings())
 

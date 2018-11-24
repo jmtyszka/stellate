@@ -31,16 +31,12 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-
-from skimage.exposure import rescale_intensity
-from stellate.astroimage import AstroImage
-from stellate.astrostack import AstroStack
-
-from pyqtgraph.Qt import QtGui, QtWidgets
 import pyqtgraph as pg
+from skimage.exposure import rescale_intensity
+from pyqtgraph.Qt import QtGui, QtWidgets
+from stellate.astroimage import AstroImage
 
-
-class imageviewer(pg.GraphicsView):
+class ImageViewer(pg.GraphicsView):
 
     def __init__(self, central_widget):
 
@@ -51,76 +47,50 @@ class imageviewer(pg.GraphicsView):
         pg.setConfigOption('antialias', True)
         pg.setConfigOption('imageAxisOrder', 'row-major')
 
-        self._layout = pg.GraphicsLayout()
-        self.setCentralItem(self._layout)
-        self.show()
-
         self._image_view = pg.ViewBox()
         self._image_view.setAspectLocked(True)
-        self._layout.addItem(self._image_view)
+        self.setCentralItem(self._image_view)
 
         # Add image item to image view
         self._image_item = pg.ImageItem()
         self._image_view.addItem(self._image_item)
-        self._has_image = True
 
         # Add star tag overlay group
         self._star_tags = QtWidgets.QGraphicsItemGroup()
         self._image_view.addItem(self._star_tags)
 
-        # Add histogram with range bars below image
-        self._hist_item = pg.PlotItem()
-        self._hist_item.setFixedHeight(64)
-        self._hist_item.hideAxis('left')
-        self._layout.addItem(self._hist_item, 1, 0)
+        # Add empty astroimage
+        self._astroimg = AstroImage()
 
-        # Add limit sliders to histogram
-        self._hlims_item = pg.LinearRegionItem()
-        self._hist_item.addItem(self._hlims_item)
+        # Init scale settings
+        self._scale_settings = 0.0, 100.0, True
 
-        # Connect limit slider signals to image contrast adjustment
-        self._hlims_item.sigRegionChangeFinished.connect(self.update_image)
+        # Finally show the GraphicsView
+        self.show()
 
-        dummy_image = np.random.normal(size=(2100, 3100))
-        self.set_image(dummy_image)
-        self.update_histogram()
+    def set_image(self, astroimg=AstroImage, scale_settings=(0.0, 100.0, True)):
 
-    def set_image(self, img=None):
+        if astroimg.has_image():
 
-        if img.size > 0:
+            self._astroimg = astroimg
             self._has_image = True
-            self._img = img
-            self.update_histogram()
-            self.update_image()
-        else:
-            self._has_image = False
 
-    def update_histogram(self):
+            # Map scale settings to image intensities
+            self._scale_settings = scale_settings
+            self.scale_intensities()
 
-        if self._has_image:
-
-            # Fill histogram
-            f, x = np.histogram(self._img, 1000)
-            self._hist_item.plot(x, f, stepMode=True, fillLevel=0, brush=(0,0,255,150))
-
-            # Reset intensity limits
-            self._hlims_item.setRegion((np.min(x), np.max(x)))
-
-    def update_image(self):
-
-        if self._has_image:
-
-            # Get intensity limits from histogram limit sliders
-            ilims = self._hlims_item.getRegion()
+            # Extract image data from astroimage
+            img = self._astroimg.image()
 
             # Rescale image intensities
-            img_adj = rescale_intensity(self._img, in_range=ilims, out_range='uint16')
-
-            # Correct for row-col rendering
-            # img_adj = np.rot90(img_adj)
+            img_adj = rescale_intensity(img, in_range=self._ilims, out_range='uint16')
 
             # Replace image data in the ImageItem
             self._image_item.setImage(img_adj, autoDownsample=True)
+
+        else:
+
+            self._has_image = False
 
     def show_stars(self, stars_df):
         """
@@ -168,3 +138,19 @@ class imageviewer(pg.GraphicsView):
             self._star_tags.addToGroup(tag3)
 
         self._image_view.addItem(self._star_tags)
+
+    def scale_intensities(self):
+
+        smin, smax, perc = self._scale_settings
+        imin, imax, ipercs = self._astroimg.intensity_stats()
+        irng = imax - imin
+
+        # Scaled intensity limits depend on scaling mode (intensity or percentile)
+        if perc:
+            ilims = ipercs[int(smin)], ipercs[int(smax)]
+        else:
+            ilims = irng * smin/100.0 + imin, irng * smax/100.0 + imin
+
+        self._ilims = ilims
+
+

@@ -29,15 +29,17 @@ You should have received a copy of the GNU General Public License
 along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import os
 import numpy as np
 from stellate.astroimage import AstroImage
+from skimage.io import imsave
 from skimage.measure import ransac
-from skimage.transform import AffineTransform, PolynomialTransform
+from skimage.transform import AffineTransform, PolynomialTransform, warp
 
 
 class AstroStack():
 
-    def __init__(self, fnames, in_mem=True):
+    def __init__(self, fnames=[], in_mem=True):
 
         # Public attributes (get and set)
         self.ref_index = 0
@@ -48,7 +50,7 @@ class AstroStack():
 
         # Load images into a list of AstroImages
         for fname in fnames:
-            print('  Loading %s into memory' % fname)
+            print('  Loading FITS image from %s' % fname)
             self._stack.append(AstroImage(fname, in_mem))
 
     def __len__(self):
@@ -63,87 +65,156 @@ class AstroStack():
             print('  More than one image required for stack registration - returning')
             return
 
-        # Make sure all images in stack have star fields by
-        # running find_stars on each
-        stars = [aimg.find_stars(write_sidecar=True) for aimg in self._stack]
+        # Fixed reference starfield
+        stars_fixed = self._stack[self.ref_index].stars(write_sidecar=True)
 
-        stars_ref = stars[self.ref_index]
+        for aimg in self._stack:
 
-        for stars_src in stars:
+            stars_moving = aimg.stars(write_sidecar=True)
 
-            # Calculate transform mapping this starfield to the reference starfield
-            T = self.calc_transform(stars_src, stars_ref)
+            # Calculate transform mapping the moving starfield to the reference starfield
+            T, inliers = self.calc_transform(stars_moving, stars_fixed)
 
-            # Report translation and rotation components of affine transform
-            print(T.translation)
-            print(T.rotation)
+            # Set astroimage transform
+            aimg.set_transform(T)
 
-    def calc_transform(self, stars_src, stars_ref):
+            # Summarize transform
+            print('')
+            print('RANSAC Affine Transform Results')
+            print('  Displacement : (%0.1f, %0.1f) pixels' % (T.translation[0], T.translation[1]))
+            print('  Rotation     : %0.1f degrees' % np.rad2deg(T.rotation))
+            print('  Inlier Count : %d' % np.sum(inliers))
+
+    def calc_transform(self, stars_moving, stars_fixed):
         """
         Calculate the transform mapping a star field to a reference star field using RANSAC
 
-        :param stars_src: Pandas dataframe, source starfield
-        :param stars_ref: Pandas dataframe, reference starfield
+        :param stars_moving: Pandas dataframe, starfield to be moved
+        :param stars_fixed: Pandas dataframe, fixed reference starfield
         :return: transform
         """
 
-        # Extract source and reference star centroids
-        # src and ref are lists of [x,y] coordinates
-        # of star centroids
-        src = np.array([[row['cc'], row['rc']] for _, row in stars_src.iterrows()])
-        ref = np.array([[row['cc'], row['rc']] for _, row in stars_ref.iterrows()])
+        # Extract source and reference star centroids as arrays
+        moving_all = stars_moving[['cc', 'rc']].values
+        fixed_all = stars_fixed[['cc', 'rc']].values
 
-        # Randomly subsample the larger star list to match the smaller star list
-        ns, nr = len(src), len(ref)
-        if ns > nr:
-            inds = np.random.choice(ns, nr, replace=False)
-            src = src[inds, :]
-        elif nr > ns:
-            inds = np.random.choice(nr, ns, replace=False)
-            ref = ref[inds, :]
+        n_moving, n_fixed = len(moving_all), len(fixed_all)
 
-        # Estimate  transform model with RANSAC
-        T, inliers = ransac((src, ref),
+        # Find out which set is larger - this determines the matching and registration direction
+        # Forward : fixed >= moving, map moving (smaller) to fixed
+        # Reverse : fixed < moving, map fixed (smaller) to moving
+        if n_fixed >= n_moving:
+            reverse_mapping = False
+            src, dst = self._pair_points(moving_all, fixed_all)
+        else:
+            reverse_mapping = True
+            src, dst = self._pair_points(fixed_all, moving_all)
+
+        # Estimate transform model with RANSAC
+        T, inliers = ransac((src, dst),
                             AffineTransform,
-                            min_samples=9,
+                            min_samples=6,
                             residual_threshold=2,
-                            max_trials=100)
+                            max_trials=1000,
+                            stop_sample_num=12,
+                            stop_probability=0.99)
 
-        outliers = inliers == False
+        # Swap the transform sense if mapping was reversed
+        if reverse_mapping:
+            T = T.inverse
 
-        print(inliers.sum())
+        return T, inliers
 
-        return T
+    def _pair_points(self, smaller, larger):
+        """
+        Find closest matches in the larger set for each point in the smaller set
+
+        :param smaller: array, smaller set of star centroids
+        :param larger: array, larger set of star centroids
+        :return: src, dst
+        """
+
+        n_smaller, n_larger = len(smaller), len(larger)
+
+        # Construct distance matrix (rows: larger  cols: smaller)
+        dist = np.zeros([n_larger, n_smaller])
+        for rr in range(0, n_larger):
+            xl, yl = larger[rr, :]
+            for cc in range(0, n_smaller):
+                xs, ys = smaller[cc, :]
+                dx, dy = xs - xl, ys - yl
+                dist[rr, cc] = np.sqrt(dx ** 2 + dy ** 2)
+
+        # Find nearest point in the larger set for each point in the smaller set
+        # src : smaller set points
+        # dst : larger set matched points
+        src = smaller.copy()
+        dst = np.zeros([n_smaller, 2])
+
+        for cc in range(0, n_smaller):
+            rmin = np.argmin(dist[:, cc])
+            dst[cc, :] = larger[rmin, :]
+
+        return src, dst
 
     def combine(self):
 
-        print('Combining images using median')
-        pass
+        print('')
+        print('Combining images (median)')
 
-    def get_fname(self, idx=0):
+        # Loop over all images in stack
+        # Resample image using calculated transform
+        # Add resampled image to running total
+
+        img_list = []
+
+        for ic, aimg in enumerate(self._stack):
+
+            T = aimg.transform()
+            img = aimg.image()
+
+            # Apply transform and resample
+            img_tx = warp(img, T, order=3)
+
+            # Add to transformed image list
+            img_list.append(img_tx)
+
+        # Convert list to numpy array
+        img_array = np.array(img_list)
+
+        # Combine images
+        img_comb = np.median(img_array, axis=0)
+
+        # Save combined image to source directory
+        dname = os.path.dirname(self._stack[0].filename())
+        fname = os.path.join(dname, 'median_combined.png')
+        print('Saving combined image to %s' % fname)
+        imsave(fname, img_comb)
+
+    def filename(self, idx=0):
         if self.idx_in_range(idx):
-            fname = self._stack[idx].get_fname()
+            fname = self._stack[idx].filename()
         else:
             fname = []
         return fname
 
-    def get_hdr(self, idx=0):
+    def metadata(self, idx=0):
         if self.idx_in_range(idx):
-            hdr = self._stack[idx].get_hdr()
+            md = self._stack[idx].metadata()
         else:
-            hdr = []
-        return hdr
+            md = []
+        return md
 
-    def get_img(self, idx=0):
+    def astroimage(self, idx=0):
         if self.idx_in_range(idx):
-            img = self._stack[idx].get_img()
+            aimg = self._stack[idx]
         else:
-            img = []
-        return img
+            aimg = []
+        return aimg
 
-    def get_stars(self, idx=0):
+    def stars(self, idx=0):
         if self.idx_in_range(idx):
-            stars = self._stack[idx].find_stars()
+            stars = self._stack[idx].stars()
         else:
             stars = []
         return stars

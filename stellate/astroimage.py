@@ -39,51 +39,89 @@ from skimage.morphology import remove_small_objects, white_tophat
 from skimage.morphology.selem import disk
 from skimage.restoration import estimate_sigma
 from skimage.measure import label, regionprops
-from skimage.transform import resize
+from skimage.transform import resize, AffineTransform
 from skimage.filters import threshold_otsu, gaussian
 
 
 class AstroImage:
 
-    def __init__(self, fname, in_mem=True):
+    def __init__(self, fname="", in_mem=True):
 
         # Filenames
-        self._fname = fname
-        self._stars_fname = self.replace_ext('_stars.json')
+        self._filename = fname
+        self._stars_fname = self._replace_ext('_stars.json')
 
         # FITS data
         self._image = []
-        self._fits_hdr = []
+        self._fits_header = []
 
         # Derived image metrics
         self._FWHM = -1.0
         self._noise_sd = -1.0
+        self._imin = np.nan
+        self._imax = np.nan
+        self._ipercs = [np.nan, np.nan]
 
         # Stars in image
         self._stars = pd.DataFrame()
         self._star_mask = []
+        self._transform = AffineTransform()
 
         # Internal status flags
         self._has_image = False
         self._has_stars = False
 
         # Load FITS image data
-        try:
-            with fits.open(fname) as hdu_list:
+        if len(fname) > 0:
 
-                self._fits_hdr = hdu_list[0].header
-
-                if in_mem:
+            try:
+                with fits.open(fname) as hdu_list:
+                    self._fits_header = hdu_list[0].header
+                    # Load image temporarily to calculate intensity stats
                     self._image = hdu_list[0].data
-                    self._has_image = True
-                else:
-                    self._image = []
-                    self._has_image = False
+            except IOError:
+                print("* Problem loading %s" % fname)
+                return
 
-        except:
-            print("* Problem loading %s" % fname)
+            # Parse FITS header into astroimage metadata
+            self.parse_fits_header()
 
-    def find_stars(self, find_again=False, write_sidecar=False):
+            # Calculate intensity limits and percentiles
+            self.intensity_stats()
+
+            # Keep in memory or purge image data
+            if in_mem:
+                self._has_image = True
+            else:
+                self._image = []
+                self._has_image = False
+
+    def parse_fits_header(self):
+
+        # Init the metadata dictionary
+        md = dict()
+
+        # Start filling fields
+        md['AcqDateLocal'] = self._get_card('DATE-LOC')
+        md['AcqDateUTC'] = self._get_card('DATE-OBS')
+        md['SensorGain'] = self._get_card('GAIN')
+        md['Telescope'] = self._get_card('TELESCOP')
+        md['Sensor'] = self._get_card('INSTRUME')
+        md['SensorTemperature'] = self._get_card('CCD-TEMP')
+        md['Dummy'] = self._get_card('DUMMY')
+        md['Object'] = self._get_card('TARGET')
+        md['Width'] = self._get_card('NAXIS1')
+        md['Height'] = self._get_card('NAXIS2')
+        md['Exposure'] = self._get_card('EXPOSURE')
+        md['Gain'] = self._get_card('GAIN')
+        md['Offset'] = self._get_card('OFFSET')
+
+        # Invert EGAIN from e-/ADU to ADU/e-
+        md['EGain'] = '%0.3f' % (1.0/float(self._get_card('EGAIN')))
+
+        self._metadata = md
+
+    def stars(self, find_again=False, write_sidecar=False):
         """
         Find likely stars in AP image
         """
@@ -255,7 +293,7 @@ class AstroImage:
             guess = [np.max(Sr), np.mean(rv), 1.0]
 
             # Fit Gaussian to data
-            popt, pcov = curve_fit(self.gauss, xdata=rv, ydata=Sr, p0=guess)
+            popt, pcov = curve_fit(self._gauss, xdata=rv, ydata=Sr, p0=guess)
 
             # Extract star sigma_k estimate
             # Negative sigma_k solutions are possible and valid so take abs
@@ -266,23 +304,65 @@ class AstroImage:
 
         return self._FWHM
 
-    def gauss(self, x, a, b, c):
-        return a * np.exp(-(x / b) ** 2) + c
-
-    def replace_ext(self, ext_rep):
-        root, ext = os.path.splitext(self._fname)
-        return root + ext_rep
+    def set_transform(self, T):
+        self._transform = T
 
     # Getters for protected attributes
-    def get_fname(self):
-        return self._fname
+    def filename(self):
+        return self._filename
 
-    def get_hdr(self):
-        return self._fits_hdr
+    def header(self):
+        return self._fits_header
 
-    def get_img(self):
+    def image(self):
         return self._image
 
     def num_stars(self):
         return len(self._stars.index)
+
+    def transform(self):
+        return self._transform
+
+    def intensity_stats(self):
+
+        if self._has_image:
+
+            if np.isnan(self._ipercs).any():
+                p = np.arange(0.0, 101.0)
+                self._ipercs = np.percentile(self._image, p)
+
+            if np.isnan(self._imin):
+                self._imin = np.min(self._ipercs)
+
+            if np.isnan(self._imax):
+                self._imax = np.max(self._ipercs)
+
+        return self._imin, self._imax, self._ipercs
+
+    def has_image(self):
+        return self._has_image
+
+    def has_stars(self):
+        return self._has_stars
+
+    def metadata(self):
+        return self._metadata
+
+    # Internal methods
+
+    def _gauss(self, x, a, b, c):
+        return a * np.exp(-(x / b) ** 2) + c
+
+    def _replace_ext(self, ext_rep):
+        root, ext = os.path.splitext(self._filename)
+        return root + ext_rep
+
+    def _get_card(self, keyword):
+        if keyword in self._fits_header:
+            val = str(self._fits_header[keyword])
+        else:
+            val = ''
+        return val
+
+
 
