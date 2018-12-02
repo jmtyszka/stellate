@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1095</width>
-    <height>755</height>
+    <width>1072</width>
+    <height>722</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -41,22 +41,7 @@
         <height>45</height>
        </size>
       </property>
-      <layout class="QHBoxLayout" name="topLayout">
-       <property name="spacing">
-        <number>12</number>
-       </property>
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
         <widget class="QLabel" name="label_2">
          <property name="text">
@@ -84,7 +69,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_6">
+        <widget class="QLabel" name="indexLabel">
          <property name="text">
           <string>Index</string>
          </property>
@@ -97,12 +82,44 @@
         <widget class="QLineEdit" name="indexText">
          <property name="maximumSize">
           <size>
-           <width>100</width>
+           <width>60</width>
            <height>16777215</height>
           </size>
          </property>
          <property name="text">
-          <string>0 of 0</string>
+          <string>0</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+         <property name="readOnly">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="ofLabel">
+         <property name="text">
+          <string>of</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="maxIndexText">
+         <property name="maximumSize">
+          <size>
+           <width>60</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>0</string>
+         </property>
+         <property name="frame">
+          <bool>false</bool>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -139,7 +156,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabView">
        <attribute name="title">
@@ -157,6 +174,18 @@
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
             <widget class="QToolBox" name="toolBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>200</width>
+               <height>400</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
                <width>200</width>
@@ -187,7 +216,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>200</width>
-                <height>473</height>
+                <height>419</height>
                </rect>
               </property>
               <attribute name="label">
@@ -293,7 +322,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>200</width>
-                <height>473</height>
+                <height>419</height>
                </rect>
               </property>
               <attribute name="label">
@@ -346,7 +375,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>200</width>
-                <height>473</height>
+                <height>419</height>
                </rect>
               </property>
               <attribute name="label">
@@ -363,13 +392,13 @@
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>0</width>
+                   <width>175</width>
                    <height>40</height>
                   </size>
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>1677215</width>
+                   <width>200</width>
                    <height>16777215</height>
                   </size>
                  </property>
@@ -382,8 +411,14 @@
                 <widget class="QPushButton" name="averageStackButton">
                  <property name="minimumSize">
                   <size>
-                   <width>0</width>
+                   <width>175</width>
                    <height>40</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>200</width>
+                   <height>16777215</height>
                   </size>
                  </property>
                  <property name="text">
@@ -391,6 +426,126 @@
                  </property>
                  <property name="checkable">
                   <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_4">
+                 <item>
+                  <widget class="QLabel" name="refIndexLabel">
+                   <property name="text">
+                    <string>Reference Index</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="refIndexText">
+                   <property name="text">
+                    <string/>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignCenter</set>
+                   </property>
+                   <property name="readOnly">
+                    <bool>false</bool>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QComboBox" name="misregModelChoice">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>175</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>200</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="currentIndex">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Rigid Body</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Affine</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Perspective</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="combMethodChoice">
+                 <property name="minimumSize">
+                  <size>
+                   <width>175</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>200</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="currentIndex">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Median</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Robust Mean</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Mean</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>175</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Keep in memory</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -407,12 +562,29 @@
                  </property>
                 </spacer>
                </item>
+               <item>
+                <widget class="QProgressBar" name="registerProgressBar">
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                 <property name="invertedAppearance">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </widget>
            </item>
            <item>
-            <widget class="ImageViewer" name="imageViewer"/>
+            <widget class="ImageViewer" name="imageViewer">
+             <property name="minimumSize">
+              <size>
+               <width>400</width>
+               <height>400</height>
+              </size>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -425,8 +597,69 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QWidget" name="widget_3" native="true">
+         <widget class="QGroupBox" name="groupBox">
+          <property name="title">
+           <string>Filter</string>
+          </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <property name="leftMargin">
+            <number>4</number>
+           </property>
+           <property name="topMargin">
+            <number>2</number>
+           </property>
+           <property name="rightMargin">
+            <number>2</number>
+           </property>
+           <property name="bottomMargin">
+            <number>2</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="maxAvgDiamLabel">
+             <property name="text">
+              <string>Max Avg Diameter</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="maxAvgDiamText">
+             <property name="maximumSize">
+              <size>
+               <width>75</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>100.0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="minAvgCircLabel">
+             <property name="text">
+              <string>Min Avg Circularity</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="minAvgCircText">
+             <property name="maximumSize">
+              <size>
+               <width>75</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>0.0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
            <item>
             <spacer name="horizontalSpacer">
              <property name="orientation">
@@ -444,7 +677,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QTableWidget" name="registerImageList">
+         <widget class="QTableWidget" name="registrationTable">
           <property name="frameShape">
            <enum>QFrame::Panel</enum>
           </property>
@@ -454,8 +687,11 @@
           <property name="sizeAdjustPolicy">
            <enum>QAbstractScrollArea::AdjustIgnored</enum>
           </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
           <property name="alternatingRowColors">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="iconSize">
            <size>
@@ -476,7 +712,7 @@
            <number>0</number>
           </property>
           <property name="columnCount">
-           <number>6</number>
+           <number>7</number>
           </property>
           <attribute name="horizontalHeaderDefaultSectionSize">
            <number>80</number>
@@ -504,6 +740,21 @@
           </attribute>
           <column>
            <property name="text">
+            <string># Stars</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Avg Diam</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Avg Circ</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
             <string>X Disp</string>
            </property>
           </column>
@@ -515,16 +766,6 @@
           <column>
            <property name="text">
             <string>Rotation</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string># Stars</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>FWHM</string>
            </property>
           </column>
           <column>
@@ -555,146 +796,6 @@ p, li { white-space: pre-wrap; }
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tabPrefs">
-       <attribute name="title">
-        <string>Preferences</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_8">
-        <item>
-         <widget class="QGroupBox" name="groupBox">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>150</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>Image Viewer</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox_3">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>150</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>Star Finder</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox_2">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>150</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>Registration</string>
-          </property>
-          <layout class="QFormLayout" name="formLayout">
-           <property name="formAlignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-           </property>
-           <item row="0" column="0">
-            <widget class="QLabel" name="misregModelLabel">
-             <property name="text">
-              <string>Misregistration Model</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="combMethodLabel">
-             <property name="text">
-              <string>Combination Method</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QComboBox" name="combMethodChoice">
-             <property name="minimumSize">
-              <size>
-               <width>300</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="currentIndex">
-              <number>0</number>
-             </property>
-             <item>
-              <property name="text">
-               <string>Median</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Mean with Quartile Outlier Rejection</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Mean with Sigma Outlier Rejection</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QComboBox" name="misregModelChoice">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>300</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="currentIndex">
-              <number>1</number>
-             </property>
-             <item>
-              <property name="text">
-               <string>Rigid Body</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Affine</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Perspective</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer_4">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>171</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
      </widget>
     </item>
    </layout>
@@ -704,7 +805,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1095</width>
+     <width>1072</width>
      <height>22</height>
     </rect>
    </property>
@@ -771,6 +872,26 @@ p, li { white-space: pre-wrap; }
     <string>Ctrl+A</string>
    </property>
   </action>
+  <action name="actionRefIndex">
+   <property name="text">
+    <string>RefIndex</string>
+   </property>
+  </action>
+  <action name="actionImageIndex">
+   <property name="text">
+    <string>ImageIndex</string>
+   </property>
+  </action>
+  <action name="actionMaxDiam">
+   <property name="text">
+    <string>MaxDiam</string>
+   </property>
+  </action>
+  <action name="actionMinCirc">
+   <property name="text">
+    <string>MinCirc</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -803,22 +924,6 @@ p, li { white-space: pre-wrap; }
    </hints>
   </connection>
   <connection>
-   <sender>findStarsButton</sender>
-   <signal>clicked()</signal>
-   <receiver>actionFindStars</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>295</x>
-     <y>537</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>registerStackButton</sender>
    <signal>clicked()</signal>
    <receiver>actionRegisterStack</receiver>
@@ -843,6 +948,86 @@ p, li { white-space: pre-wrap; }
     <hint type="sourcelabel">
      <x>139</x>
      <y>284</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>findStarsButton</sender>
+   <signal>clicked()</signal>
+   <receiver>actionFindStars</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>295</x>
+     <y>537</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>refIndexText</sender>
+   <signal>returnPressed()</signal>
+   <receiver>actionRefIndex</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>193</x>
+     <y>343</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>indexText</sender>
+   <signal>returnPressed()</signal>
+   <receiver>actionImageIndex</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>926</x>
+     <y>56</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>maxAvgDiamText</sender>
+   <signal>returnPressed()</signal>
+   <receiver>actionMaxDiam</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>198</x>
+     <y>142</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>minAvgCircText</sender>
+   <signal>returnPressed()</signal>
+   <receiver>actionMinCirc</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>406</x>
+     <y>142</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>

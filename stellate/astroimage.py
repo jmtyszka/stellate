@@ -35,7 +35,7 @@ import numpy as np
 from astropy.io import fits
 from numpy.fft import fft2, fftshift
 from scipy.optimize import curve_fit
-from skimage.morphology import remove_small_objects, white_tophat
+from skimage.morphology import binary_opening, remove_small_objects, white_tophat
 from skimage.morphology.selem import disk
 from skimage.restoration import estimate_sigma
 from skimage.measure import label, regionprops
@@ -56,7 +56,7 @@ class AstroImage:
         self._fits_header = []
 
         # Derived image metrics
-        self._FWHM = -1.0
+        self._global_fwhm = -1.0
         self._noise_sd = -1.0
         self._imin = np.nan
         self._imax = np.nan
@@ -152,24 +152,24 @@ class AstroImage:
 
             ny, nx = self._image.shape
 
-            # Estimate typical star FWHM in k-space
-            self.estimate_fwhm()
-            print('  FWHM estimate : %0.1f pixels' % self._FWHM)
+            # Estimate typical star global_fwhm in k-space
+            self.estimate_global_fwhm()
+            print('  Global global_fwhm estimate : %0.1f pixels' % self._global_fwhm)
 
-            # Matched Gaussian filter (sigma = FWHM/2)
+            # Matched Gaussian filter (sigma = global_fwhm/2)
             # Low pass filter prior to downsampling
-            sigma_g = self._FWHM * 0.5
+            sigma_g = self._global_fwhm * 0.5
             print('  Gaussian matched filter (sigma = %0.1f pixels' % sigma_g)
-            self._image = gaussian(self._image, sigma_g)
+            img_gauss = gaussian(self._image, sigma_g)
 
-            # Matched resampling scale factor (FWHM = 4 pixels)
-            sf = 4.0 / self._FWHM
+            # Matched resampling scale factor (global_fwhm = 4 pixels)
+            sf = 4.0 / self._global_fwhm
 
             # Downsample image (bicubic, no antialiasing)
             nxd = int(nx * sf)
             nyd = int(ny * sf)
             print('  Matched resampling to %d x %d' % (nxd, nyd))
-            imgd = resize(self._image, [nyd, nxd], order=3, anti_aliasing=False, mode='reflect')
+            img_dwn = resize(img_gauss, [nyd, nxd], order=3, anti_aliasing=False, mode='reflect')
 
             # Structuring element on scale of typical star
             # Radius = 5 works well after matched downsampling (empirical)
@@ -179,9 +179,9 @@ class AstroImage:
             # - suppress smooth background
             # - highlight bright objects smaller than selem
             print('  White tophat filtering to highlight stars')
-            imgd_wth = white_tophat(imgd, star_selem)
+            imgd_wth = white_tophat(img_dwn, star_selem)
 
-            # Global threshold (Yen's method) and remove small objects
+            # Global Otsu threshold and remove small objects
             star_maskd = imgd_wth > threshold_otsu(imgd_wth)
             star_maskd = remove_small_objects(star_maskd, min_size=5)
 
@@ -202,30 +202,50 @@ class AstroImage:
 
             for rp in roi_props:
 
-                r0, c0, _, _ = rp.bbox
-                dr, dc = rp.weighted_local_centroid  # (row, col)
-                area = np.float(rp.filled_area)  # in pixels
-                perim = np.float(rp.perimeter)
-                diam = rp.equivalent_diameter
+                # Star centroid in image space (row, col)
+                yc, xc = rp.weighted_centroid
 
-                # Star centroid in image space
-                rc, cc = r0 + dr, c0 + dc
+                # Estimate star global_fwhm and circularity from intensity ROI
+                diam, ecc, circ, bright = self._star_stuff(rp.intensity_image)
 
-                # Circularity [0, 1] with 1.0 = perfect circle
-                circ = 4.0 * np.pi * area / (perim * perim)
-
-                star_list.append([rc, cc, diam, circ])
+                star_list.append([xc, yc, diam, ecc, circ, bright])
 
             # Convert list of star parameters to a Pandas dataframe
-            self._stars = pd.DataFrame(star_list, columns=['rc','cc','diam','circ'])
+            self._stars = pd.DataFrame(star_list, columns=['xc','yc','diam','ecc', 'circ', 'bright'])
 
             # Set stars found status
             self._has_stars = True
+
+        # self.prune_stars()
 
         if write_sidecar:
             self.write_stars()
 
         return self._stars
+
+    def prune_stars(self):
+        """
+        Remove outliers and unlikely stars
+        """
+
+        # Extract numeric data from dataframe
+        bright = self._stars['bright']
+        diam = self._stars['diam']
+        circ = self._stars['circ']
+
+        # Discard objects larger then 2 * global FWHM
+        too_big = diam > self._global_fwhm * 2.0
+
+        # Keep top 25% brightest stars
+        too_dim = bright < np.percentile(bright, 75)
+
+        # Discard highly non-circular objects
+        not_round = circ < 0.75
+
+        to_drop = np.where(too_big | too_dim | not_round)[0]
+
+        # Prune rows
+        self._stars = self._stars.drop(to_drop, axis=0)
 
     def write_stars(self):
         try:
@@ -247,9 +267,9 @@ class AstroImage:
             self._noise_sd = estimate_sigma(self._image)
         return self._noise_sd
 
-    def estimate_fwhm(self):
+    def estimate_global_fwhm(self):
         """
-        Estimate mean FWHM of bright sources in image in Fourier space
+        Estimate mean global_fwhm of bright sources in image in Fourier space
         - circular integrals of abs(k-space)
         - exclude area close to k-space origin
         - model as single Gaussian + dc noise offset (solves baseline issues in [1])
@@ -261,7 +281,7 @@ class AstroImage:
         Available: http://iopscience.iop.org/article/10.1088/1742-6596/849/1/012042/meta. [Accessed: 24-Oct-2018]
         """
 
-        if self._FWHM < 0.0:
+        if self._global_fwhm < 0.0:
 
             ask = np.abs(fftshift(fft2(fftshift(self._image))))
 
@@ -299,10 +319,13 @@ class AstroImage:
             # Negative sigma_k solutions are possible and valid so take abs
             sigma_k = np.abs(popt[1])
 
-            self._FWHM = r_max / sigma_k
+            self._global_fwhm = r_max / sigma_k
             self._has_fwhm = True
 
-        return self._FWHM
+        return self._global_fwhm
+
+    def global_fwhm(self):
+        return self._global_fwhm
 
     def set_transform(self, T):
         self._transform = T
@@ -348,6 +371,15 @@ class AstroImage:
     def metadata(self):
         return self._metadata
 
+    def mean_star_diameter(self):
+        return self._stars['diam'].mean()
+
+    def mean_star_eccentricity(self):
+        return self._stars['ecc'].mean()
+
+    def mean_star_circularity(self):
+        return self._stars['circ'].mean()
+
     # Internal methods
 
     def _gauss(self, x, a, b, c):
@@ -363,6 +395,40 @@ class AstroImage:
         else:
             val = ''
         return val
+
+    def _star_stuff(self, roi_img):
+
+        # Otsu threshold ROI star image
+        roi_mask = roi_img > threshold_otsu(roi_img)
+
+        # Get binary mask region properties
+        roi_props = regionprops(label_image=roi_mask.astype(int), intensity_image=roi_img, coordinates='rc')
+
+        # Init shape metrics
+        diam = 0.0
+        ecc = 0.0
+        circ = 0.0
+        bright = 0.0
+
+        for rp in roi_props:
+
+            # Save shape factors for largest diameter region
+            # which is assumed to be the star in the ROI
+            d = rp.equivalent_diameter
+
+            if d > diam:
+
+                # Save shape factors
+                diam = d
+                ecc = rp.eccentricity
+                area = rp.filled_area
+                perim = rp.perimeter
+                circ = 4 * np.pi * area / (perim * perim)
+                circ = 1.0 if circ > 1.0 else circ
+                bright = rp.mean_intensity
+
+        return diam, ecc, circ, bright
+
 
 
 

@@ -111,24 +111,25 @@ class ImageViewer(pg.GraphicsView):
 
         for index, row in stars_df.iterrows():
 
-            yy, xx, d, c = row['rc'], row['cc'], row['diam'], row['circ']
+            yc, xc, d, c = row['yc'], row['xc'], row['diam'], row['circ']
 
+            # Radius of internal space for cross-hairs
             r = d * 0.75
 
             # Tag above
-            tag0 = QtWidgets.QGraphicsLineItem(xx, yy+r, xx, yy+2*r)
+            tag0 = QtWidgets.QGraphicsLineItem(xc, yc+r, xc, yc+2*r)
             tag0.setPen(pen)
 
             # Tag below
-            tag1 = QtWidgets.QGraphicsLineItem(xx, yy-r, xx, yy-2*r)
+            tag1 = QtWidgets.QGraphicsLineItem(xc, yc-r, xc, yc-2*r)
             tag1.setPen(pen)
 
             # Tag left
-            tag2 = QtWidgets.QGraphicsLineItem(xx-r, yy, xx-2*r, yy)
+            tag2 = QtWidgets.QGraphicsLineItem(xc-r, yc, xc-2*r, yc)
             tag2.setPen(pen)
 
             # Tag right
-            tag3 = QtWidgets.QGraphicsLineItem(xx+r, yy, xx+2*r, yy)
+            tag3 = QtWidgets.QGraphicsLineItem(xc+r, yc, xc+2*r, yc)
             tag3.setPen(pen)
 
             # Add tags to overlay group
