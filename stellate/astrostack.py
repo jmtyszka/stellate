@@ -32,7 +32,7 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import numpy as np
 from stellate.astroimage import AstroImage
-from skimage.io import imsave
+from skimage.io import imread, imsave
 from skimage.exposure import rescale_intensity
 from skimage.measure import ransac
 from skimage.transform import AffineTransform, PolynomialTransform, warp
@@ -40,14 +40,18 @@ from PyQt5.QtWidgets import QProgressBar, QApplication
 
 class AstroStack():
 
-    def __init__(self, fnames=[], in_mem=True):
+    def __init__(self, nimgs=0, fnames=[], in_mem=True):
 
         # Public attributes (get and set)
         self.ref_index = 0
 
         # Protected attributes
         self._fnames = fnames
-        self._stack = []
+
+        if nimgs > 0:
+            self._stack = [AstroImage()] * nimgs
+        else:
+            self._stack = []
 
         # Load images into a list of AstroImages
         for fname in fnames:
@@ -56,6 +60,10 @@ class AstroStack():
 
     def __len__(self):
         return len(self._stack)
+
+    def load_png(self, fname, idx=0):
+
+        self._stack[idx] = AstroImage(fname)
 
     def register(self, progbar=None):
 
@@ -159,7 +167,7 @@ class AstroStack():
             T = aimg.transform()
             img = aimg.image()
 
-            # Apply transform, resample and store
+            # Apply transform, resize and store
             img_array[:, :, ic] = warp(img, T, order=3)
 
         # Combine images
@@ -178,6 +186,23 @@ class AstroStack():
         # Reset progress bar
         if progbar:
             progbar.setValue(0.0)
+
+    def enforce_size(self):
+
+        # Find maximum height and width of all images in stack
+        ny_max, nx_max = 3, 3
+        for aimg in self._stack:
+            if aimg.has_image():
+                ny, nx = aimg.image().shape
+                nx_max = nx if nx > nx_max else nx_max
+                ny_max = ny if ny > ny_max else ny_max
+
+        print('  Resize all LRGB channels to %d x %d' % (nx_max, ny_max))
+
+        for aimg in self._stack:
+            aimg.resize(ny_max, nx_max)
+
+        return ny_max, nx_max
 
     def filename(self, idx=0):
         if self.idx_in_range(idx):

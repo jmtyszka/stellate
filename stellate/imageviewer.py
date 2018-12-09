@@ -33,6 +33,7 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 import pyqtgraph as pg
 from skimage.exposure import rescale_intensity
+from skimage.color import rgb2hsv, hsv2rgb
 from pyqtgraph.Qt import QtGui, QtWidgets
 from stellate.astroimage import AstroImage
 
@@ -63,7 +64,7 @@ class ImageViewer(pg.GraphicsView):
         self._astroimg = AstroImage()
 
         # Init scale settings
-        self._scale_settings = 0.0, 100.0, True
+        self._scale_settings = 0.0, 100.0
 
         # Finally show the GraphicsView
         self.show()
@@ -142,16 +143,45 @@ class ImageViewer(pg.GraphicsView):
 
     def scale_intensities(self):
 
-        smin, smax, perc = self._scale_settings
-        imin, imax, ipercs = self._astroimg.intensity_stats()
+        smin, smax = self._scale_settings
+        imin, imax = self._astroimg.intensity_stats()
         irng = imax - imin
 
-        # Scaled intensity limits depend on scaling mode (intensity or percentile)
-        if perc:
-            ilims = ipercs[int(smin)], ipercs[int(smax)]
-        else:
-            ilims = irng * smin/100.0 + imin, irng * smax/100.0 + imin
+        # Scaled intensity limits
+        ilims = irng * smin/100.0 + imin, irng * smax/100.0 + imin
 
         self._ilims = ilims
+
+    def render_lrgb(self, lrgb_astack):
+
+        """
+        Render LRGB short AstroStack as a color image in the viewer
+        """
+
+        # LRGB AstroStack should have 4 elements
+        if not len(lrgb_astack) == 4:
+            return
+
+        # Make sure all images in stack are the same dimensions
+        # Resample as necessary and return resampled dimensions
+        ny, nx = lrgb_astack.enforce_size()
+
+        rgb = np.zeros([ny, nx, 3])
+
+        rgb[:,:,0] = lrgb_astack.astroimage(1).image()
+        rgb[:,:,1] = lrgb_astack.astroimage(2).image()
+        rgb[:,:,2] = lrgb_astack.astroimage(3).image()
+
+        # Convert to HSV
+        hsv = rgb2hsv(rgb)
+
+        # Replace V channel with lum
+        hsv[:,:,2] = lrgb_astack.astroimage(0).image()
+
+        # Convert back to RGB
+        rgb = hsv2rgb(hsv)
+
+        # Replace image data in the ImageItem
+        self._image_item.setImage(rgb, autoDownsample=True)
 
 

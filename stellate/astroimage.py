@@ -35,6 +35,7 @@ import numpy as np
 from astropy.io import fits
 from numpy.fft import fft2, fftshift
 from scipy.optimize import curve_fit
+from skimage.io import imread
 from skimage.morphology import binary_opening, remove_small_objects, white_tophat
 from skimage.morphology.selem import disk
 from skimage.restoration import estimate_sigma
@@ -45,22 +46,22 @@ from skimage.filters import threshold_otsu, gaussian
 
 class AstroImage:
 
-    def __init__(self, fname="", in_mem=True):
+    def __init__(self, fname="", image=[], in_mem=True):
 
         # Filenames
         self._filename = fname
+        self._filetype = self._guess_filetype(fname)
         self._stars_fname = self._replace_ext('_stars.json')
 
-        # FITS data
-        self._image = []
-        self._fits_header = []
+        # Create minimal image and empty FITS header
+        self._image = np.zeros([3, 3])
+        self._fits_header = fits.PrimaryHDU().header
 
         # Derived image metrics
         self._global_fwhm = -1.0
         self._noise_sd = -1.0
         self._imin = np.nan
         self._imax = np.nan
-        self._ipercs = [np.nan, np.nan]
 
         # Stars in image
         self._stars = pd.DataFrame()
@@ -71,22 +72,40 @@ class AstroImage:
         self._has_image = False
         self._has_stars = False
 
-        # Load FITS image data
+        # Set image directly
+        if len(image) > 0:
+            self._image = image
+
+        # Load PNG or FITS image
         if len(fname) > 0:
 
-            try:
-                with fits.open(fname) as hdu_list:
-                    self._fits_header = hdu_list[0].header
-                    # Load image temporarily to calculate intensity stats
-                    self._image = hdu_list[0].data
-            except IOError:
-                print("* Problem loading %s" % fname)
+            if self._filetype == 'FITS':
+
+                try:
+                    with fits.open(fname) as hdu_list:
+                        self._fits_header = hdu_list[0].header
+                        # Load image temporarily to calculate intensity stats
+                        self._image = hdu_list[0].data
+                except IOError:
+                    print("* Problem loading %s" % fname)
+                    return
+
+                # Parse FITS header into astroimage metadata
+                self.parse_fits_header()
+
+            elif self._filetype == 'PNG':
+
+                try:
+                    self._image = imread(fname)
+                except IOError:
+                    print('* Problem loading %s' % fname)
+                    return
+
+            else:
+                print('* Unsupported image file type - returning')
                 return
 
-            # Parse FITS header into astroimage metadata
-            self.parse_fits_header()
-
-            # Calculate intensity limits and percentiles
+            # Calculate intensity limits
             self.intensity_stats()
 
             # Keep in memory or purge image data
@@ -350,17 +369,16 @@ class AstroImage:
 
         if self._has_image:
 
-            if np.isnan(self._ipercs).any():
-                p = np.arange(0.0, 101.0)
-                self._ipercs = np.percentile(self._image, p)
-
             if np.isnan(self._imin):
-                self._imin = np.min(self._ipercs)
+                self._imin = np.min(self._image)
 
             if np.isnan(self._imax):
-                self._imax = np.max(self._ipercs)
+                self._imax = np.max(self._image)
 
-        return self._imin, self._imax, self._ipercs
+        return self._imin, self._imax
+
+    def resize(self, ny, nx):
+        self._image = resize(self._image, [ny, nx], order=3, mode='reflect', anti_aliasing=True)
 
     def has_image(self):
         return self._has_image
@@ -385,6 +403,19 @@ class AstroImage:
     def _gauss(self, x, a, b, c):
         return a * np.exp(-(x / b) ** 2) + c
 
+    def _guess_filetype(self, fname=""):
+
+        _, ext = os.path.splitext(fname)
+
+        if 'png' in ext:
+            filetype = 'PNG'
+        elif 'fit' in ext:
+            filetype = 'FITS'
+        else:
+            filetype = 'unknown'
+
+        return filetype
+
     def _replace_ext(self, ext_rep):
         root, ext = os.path.splitext(self._filename)
         return root + ext_rep
@@ -398,17 +429,23 @@ class AstroImage:
 
     def _star_stuff(self, roi_img):
 
-        # Otsu threshold ROI star image
-        roi_mask = roi_img > threshold_otsu(roi_img)
-
-        # Get binary mask region properties
-        roi_props = regionprops(label_image=roi_mask.astype(int), intensity_image=roi_img, coordinates='rc')
-
         # Init shape metrics
         diam = 0.0
         ecc = 0.0
         circ = 0.0
         bright = 0.0
+
+        # Otsu threshold ROI star image
+        try:
+            roi_mask = roi_img > threshold_otsu(roi_img)
+        except ValueError:
+            print('* _star_stuff: Otsu threshold value error')
+            print('* ROI dimensions : %d x %d' % (roi_img.shape[0], roi_img.shape[1]))
+            return diam, ecc, circ, bright
+
+        # Get binary mask region properties
+        roi_props = regionprops(label_image=roi_mask.astype(int), intensity_image=roi_img, coordinates='rc')
+
 
         for rp in roi_props:
 

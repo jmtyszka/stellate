@@ -52,10 +52,13 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        # Init image storage
+        # Init image stack
         self._n_imgs = 0
         self._img_idx = 0
         self._stack = AstroStack()
+
+        # Init LRGB short stack
+        self._lrgb = AstroStack(nimgs=4)
 
         # Inclusion criteria
         self._max_diam = 100.0
@@ -70,10 +73,20 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         self.ui.actionMaxDiam.triggered.connect(self._set_max_diam)
         self.ui.actionMinCirc.triggered.connect(self._set_min_circ)
 
-        # Button callbacks
+        # Stack tab slider callbacks
+        self.ui.maxLevelSlider.sliderReleased.connect(self.update_stack_viewer)
+        self.ui.minLevelSlider.sliderReleased.connect(self.update_stack_viewer)
+
+        # Stack tab button callbacks
         self.ui.actionFindStars.triggered.connect(self.find_stars)
         self.ui.actionRegisterStack.triggered.connect(self.register_stack)
         self.ui.actionAverageStack.triggered.connect(self.combine_stack)
+
+        # LRGB tab button callbacks
+        self.ui.loadLumButton.released.connect(lambda: self.load_lrgb(0))
+        self.ui.loadRedButton.released.connect(lambda: self.load_lrgb(1))
+        self.ui.loadGreenButton.released.connect(lambda: self.load_lrgb(2))
+        self.ui.loadBlueButton.released.connect(lambda: self.load_lrgb(3))
 
     def load_fits(self):
 
@@ -93,25 +106,49 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         if len(fnames) > 0:
 
             # Load selected FITS images into an AstroStack object
-            self._stack = AstroStack(fnames)
+            self._stack = AstroStack(fnames=fnames)
 
             # Reset current image index
             self._img_idx = 0
 
             # Update all tabs dependent on current image
             self.update_ui_text()
-            self.update_viewer()
+            self.update_stack_viewer()
 
-    def update_viewer(self):
+    def load_lrgb(self, idx=0):
+
+        # Setup file dialog options
+        options = QtWidgets.QFileDialog.Options()
+
+        # Open a file chooser dialog
+        fname, _ = QtWidgets.QFileDialog.getOpenFileName(self,
+                                                           directory="",
+                                                           filter="PNG images (*.png)",
+                                                           options=options)
+
+        if len(fname) > 0:
+
+            # Load selected PNG image into the AstroStack at the given index
+            self._lrgb.load_png(fname, idx)
+            self.update_lrgb()
+
+    def update_stack_viewer(self):
         """
-        Update image displayed in the image viewer
+        Update image displayed in the stack viewer
         """
 
         # Get current astroimage from stack
         aimg = self._stack.astroimage(self._img_idx)
 
         # Pass astroimage and scale settings to image viewer
-        self.ui.imageViewer.set_image(aimg, self.scale_settings())
+        self.ui.StackViewer.set_image(aimg, self.scale_settings())
+
+    def update_lrgb(self):
+        """
+        Update LRGB color image
+        """
+
+        self.ui.LRGBViewer.render_lrgb(self._lrgb)
 
     def update_ui_text(self):
 
@@ -135,16 +172,19 @@ class StellateMainWindow(QtWidgets.QMainWindow):
         # Sliders range from 0.0 to 100.0 in 1.0 steps
         smin = self.ui.minLevelSlider.value()
         smax = self.ui.maxLevelSlider.value()
-        sperc = self.ui.percentileLevels.isChecked()
 
-        self._scale_settings = smin, smax, sperc
+        # Set min max text boxes
+        self.ui.minLevelText.setText('%d' % smin)
+        self.ui.maxLevelText.setText('%d' % smax)
+
+        self._scale_settings = smin, smax
 
         return self._scale_settings
 
     def find_stars(self):
 
         stars_df = self._stack.stars(self._img_idx)
-        self.ui.imageViewer.show_stars(stars_df)
+        self.ui.StackViewer.show_stars(stars_df)
 
     def register_stack(self):
         if len(self._stack) > 0:
@@ -228,7 +268,7 @@ class StellateMainWindow(QtWidgets.QMainWindow):
             self.update_ui_text()
 
             # Update displayed image in viewer
-            self.ui.imageViewer.set_image(self._stack.astroimage(self._img_idx), self.scale_settings())
+            self.ui.StackViewer.set_image(self._stack.astroimage(self._img_idx), self.scale_settings())
 
     # Internal methods
 
