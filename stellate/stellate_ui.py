@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'stellate.ui'
+# Form implementation generated from reading ui file 'stellate.ui',
+# licensing of 'stellate.ui' applies.
 #
-# Created by: PyQt5 UI code generator 5.10.1
+# Created: Wed Feb 20 14:52:57 2019
+#      by: pyside2-uic  running on PySide2 5.12.1
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtGui, QtWidgets
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -42,6 +44,7 @@ class Ui_MainWindow(object):
         self.widget.setMaximumSize(QtCore.QSize(16777215, 45))
         self.widget.setObjectName("widget")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.widget)
+        self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         self.label_2 = QtWidgets.QLabel(self.widget)
         self.label_2.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
@@ -82,6 +85,7 @@ class Ui_MainWindow(object):
         self.widget_2.setMaximumSize(QtCore.QSize(150, 16777215))
         self.widget_2.setObjectName("widget_2")
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.widget_2)
+        self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.groupBox_2 = QtWidgets.QGroupBox(self.widget_2)
         self.groupBox_2.setObjectName("groupBox_2")
@@ -220,6 +224,8 @@ class Ui_MainWindow(object):
         self.registerImageList.setRowCount(20)
         self.registerImageList.setColumnCount(6)
         self.registerImageList.setObjectName("registerImageList")
+        self.registerImageList.setColumnCount(6)
+        self.registerImageList.setRowCount(20)
         item = QtWidgets.QTableWidgetItem()
         self.registerImageList.setHorizontalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
@@ -270,51 +276,54 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
-        self.actionClose.triggered.connect(MainWindow.close)
-        self.findStarsButton.clicked.connect(self.actionFindStars.trigger)
+        QtCore.QObject.connect(self.actionClose, QtCore.SIGNAL("triggered()"), MainWindow.close)
+        QtCore.QObject.connect(self.findStarsButton, QtCore.SIGNAL("clicked()"), self.actionFindStars.trigger)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.label_2.setText(_translate("MainWindow", "Image File"))
-        self.label_6.setText(_translate("MainWindow", "Index"))
-        self.groupBox_2.setTitle(_translate("MainWindow", "Actions"))
-        self.findStarsButton.setText(_translate("MainWindow", "Find Stars"))
-        self.groupBox.setTitle(_translate("MainWindow", "Channels"))
-        self.lumButton.setText(_translate("MainWindow", "Lum"))
-        self.redButton.setText(_translate("MainWindow", "Red"))
-        self.greenButton.setText(_translate("MainWindow", "Green"))
-        self.blueButton.setText(_translate("MainWindow", "Blue"))
-        self.label_7.setText(_translate("MainWindow", "Dimensions"))
-        self.label.setText(_translate("MainWindow", "Target"))
-        self.label_3.setText(_translate("MainWindow", "Acquired"))
-        self.label_4.setText(_translate("MainWindow", "Bit Depth"))
-        self.label_8.setText(_translate("MainWindow", "Exposure"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabView), _translate("MainWindow", "View"))
-        self.pushButton.setText(_translate("MainWindow", "Select Images to Register"))
+        MainWindow.setWindowTitle(QtWidgets.QApplication.translate("MainWindow", "MainWindow", None, -1))
+        self.label_2.setText(QtWidgets.QApplication.translate("MainWindow", "Image File", None, -1))
+        self.label_6.setText(QtWidgets.QApplication.translate("MainWindow", "Index", None, -1))
+        self.groupBox_2.setTitle(QtWidgets.QApplication.translate("MainWindow", "Actions", None, -1))
+        self.findStarsButton.setText(QtWidgets.QApplication.translate("MainWindow", "Find Stars", None, -1))
+        self.groupBox.setTitle(QtWidgets.QApplication.translate("MainWindow", "Channels", None, -1))
+        self.lumButton.setText(QtWidgets.QApplication.translate("MainWindow", "Lum", None, -1))
+        self.redButton.setText(QtWidgets.QApplication.translate("MainWindow", "Red", None, -1))
+        self.greenButton.setText(QtWidgets.QApplication.translate("MainWindow", "Green", None, -1))
+        self.blueButton.setText(QtWidgets.QApplication.translate("MainWindow", "Blue", None, -1))
+        self.label_7.setText(QtWidgets.QApplication.translate("MainWindow", "Dimensions", None, -1))
+        self.label.setText(QtWidgets.QApplication.translate("MainWindow", "Target", None, -1))
+        self.label_3.setText(QtWidgets.QApplication.translate("MainWindow", "Acquired", None, -1))
+        self.label_4.setText(QtWidgets.QApplication.translate("MainWindow", "Bit Depth", None, -1))
+        self.label_8.setText(QtWidgets.QApplication.translate("MainWindow", "Exposure", None, -1))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabView), QtWidgets.QApplication.translate("MainWindow", "View", None, -1))
+        self.pushButton.setText(QtWidgets.QApplication.translate("MainWindow", "Select Images to Register", None, -1))
         self.registerImageList.setSortingEnabled(True)
-        item = self.registerImageList.horizontalHeaderItem(0)
-        item.setText(_translate("MainWindow", "X Disp"))
-        item = self.registerImageList.horizontalHeaderItem(1)
-        item.setText(_translate("MainWindow", "Y Disp"))
-        item = self.registerImageList.horizontalHeaderItem(2)
-        item.setText(_translate("MainWindow", "Rotation"))
-        item = self.registerImageList.horizontalHeaderItem(3)
-        item.setText(_translate("MainWindow", "# Stars"))
-        item = self.registerImageList.horizontalHeaderItem(4)
-        item.setText(_translate("MainWindow", "FWHM"))
-        item = self.registerImageList.horizontalHeaderItem(5)
-        item.setText(_translate("MainWindow", "Image File"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabRegister), _translate("MainWindow", "Register"))
-        self.menuFile.setTitle(_translate("MainWindow", "File"))
-        self.actionSave_FITS.setText(_translate("MainWindow", "Save FITS ..."))
-        self.actionSave_FITS.setShortcut(_translate("MainWindow", "Ctrl+S"))
-        self.actionOpen_FITS.setText(_translate("MainWindow", "Open FITS ..."))
-        self.actionOpen_FITS.setShortcut(_translate("MainWindow", "Ctrl+O"))
-        self.actionClose.setText(_translate("MainWindow", "Close"))
-        self.actionClose.setShortcut(_translate("MainWindow", "Ctrl+W"))
-        self.actionFindStars.setText(_translate("MainWindow", "FindStars"))
-        self.actionFindStars.setShortcut(_translate("MainWindow", "Ctrl+F"))
+        self.registerImageList.horizontalHeaderItem(0).setText(QtWidgets.QApplication.translate("MainWindow", "X Disp", None, -1))
+        self.registerImageList.horizontalHeaderItem(1).setText(QtWidgets.QApplication.translate("MainWindow", "Y Disp", None, -1))
+        self.registerImageList.horizontalHeaderItem(2).setText(QtWidgets.QApplication.translate("MainWindow", "Rotation", None, -1))
+        self.registerImageList.horizontalHeaderItem(3).setText(QtWidgets.QApplication.translate("MainWindow", "# Stars", None, -1))
+        self.registerImageList.horizontalHeaderItem(4).setText(QtWidgets.QApplication.translate("MainWindow", "FWHM", None, -1))
+        self.registerImageList.horizontalHeaderItem(5).setText(QtWidgets.QApplication.translate("MainWindow", "Image File", None, -1))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabRegister), QtWidgets.QApplication.translate("MainWindow", "Register", None, -1))
+        self.menuFile.setTitle(QtWidgets.QApplication.translate("MainWindow", "File", None, -1))
+        self.actionSave_FITS.setText(QtWidgets.QApplication.translate("MainWindow", "Save FITS ...", None, -1))
+        self.actionSave_FITS.setShortcut(QtWidgets.QApplication.translate("MainWindow", "Ctrl+S", None, -1))
+        self.actionOpen_FITS.setText(QtWidgets.QApplication.translate("MainWindow", "Open FITS ...", None, -1))
+        self.actionOpen_FITS.setShortcut(QtWidgets.QApplication.translate("MainWindow", "Ctrl+O", None, -1))
+        self.actionClose.setText(QtWidgets.QApplication.translate("MainWindow", "Close", None, -1))
+        self.actionClose.setShortcut(QtWidgets.QApplication.translate("MainWindow", "Ctrl+W", None, -1))
+        self.actionFindStars.setText(QtWidgets.QApplication.translate("MainWindow", "FindStars", None, -1))
+        self.actionFindStars.setShortcut(QtWidgets.QApplication.translate("MainWindow", "Ctrl+F", None, -1))
 
 from stellate.imageviewer import imageviewer
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())
+

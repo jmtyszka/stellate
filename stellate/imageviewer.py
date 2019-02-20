@@ -10,6 +10,7 @@ DATES
 ----
 2018-10-08 JMT Implement using PyQt5 QGraphicsView
 2018-11-07 JMT Reimplement using PyQtGraph widget
+2019-02-20 JMT Start migration to PySide2 - official bindings for Qt5
 
 LICENSE
 ----

@@ -30,7 +30,7 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from PyQt5 import QtWidgets, QtCore
+from PySide2 import QtCore, QtWidgets
 from astropy.io import fits
 from stellate.stellate_ui import Ui_MainWindow
 from stellate.starfinder import starfinder

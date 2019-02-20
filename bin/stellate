@@ -30,7 +30,7 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import sys
-from PyQt5 import QtWidgets
+from PySide2 import QtWidgets
 from stellate.mainwindow import StellateMainWindow
 
 
