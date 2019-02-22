@@ -35,7 +35,7 @@ import numpy as np
 import pyqtgraph as pg
 from skimage.exposure import rescale_intensity
 from skimage.color import rgb2hsv, hsv2rgb
-# from pyqtgraph.Qt import QtGui, QtWidgets
+from pyqtgraph.Qt import QtGui, QtWidgets
 from stellate.astroimage import AstroImage
 
 class ImageViewer(pg.GraphicsView):
