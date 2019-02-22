@@ -31,7 +31,7 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
 import numpy as np
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PySide2 import QtWidgets, QtCore, QtGui
 from stellate.stellate_ui import Ui_MainWindow
 from stellate.astrostack import AstroStack
 
