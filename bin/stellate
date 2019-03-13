@@ -30,14 +30,14 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import sys
-from PySide2 import QtWidgets
+from PySide2.QtWidgets import QApplication
 from stellate.mainwindow import StellateMainWindow
 
 
 # Main entry point
 if __name__ == "__main__":
 
-    app = QtWidgets.QApplication(sys.argv)
+    app = QApplication(sys.argv)
 
     window = StellateMainWindow()
     window.show()

@@ -3,7 +3,7 @@
 # Form implementation generated from reading ui file 'stellate.ui',
 # licensing of 'stellate.ui' applies.
 #
-# Created: Wed Feb 20 15:01:09 2019
+# Created: Wed Mar 13 15:37:56 2019
 #      by: pyside2-uic  running on PySide2 5.12.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -418,7 +418,7 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.tabMetadata, "")
         self.verticalLayout_2.addWidget(self.tabWidget)
         MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
+        self.menubar = QtWidgets.QMenuBar()
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1177, 22))
         self.menubar.setDefaultUp(False)
         self.menubar.setObjectName("menubar")
@@ -543,8 +543,8 @@ class Ui_MainWindow(object):
         self.actionStackLevels.setText(QtWidgets.QApplication.translate("MainWindow", "StackLevels", None, -1))
         self.actionStackLevels.setToolTip(QtWidgets.QApplication.translate("MainWindow", "Stack Intensity Levels", None, -1))
 
-from stellate.imageviewer import ImageViewer
 from stellate.fitsmetatext import FITSMetaText
+from stellate.imageviewer import ImageViewer
 
 if __name__ == "__main__":
     import sys

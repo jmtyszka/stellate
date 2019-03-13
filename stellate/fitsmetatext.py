@@ -31,8 +31,7 @@ along with stellate.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import string
-import numpy as np
-from PyQt5.QtWidgets import QTextEdit
+from PySide2.QtWidgets import QTextEdit
 
 
 class FITSMetaText(QTextEdit):
